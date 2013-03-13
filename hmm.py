@@ -65,7 +65,7 @@ class HMM(object):
         
         @O:
             type:    numpy.array
-            param:   The observation matrix of HMM
+            param:   The observation(emission) matrix of HMM
         
         @sd:
             type:    numpy.array
@@ -73,9 +73,7 @@ class HMM(object):
         '''
         if filename is not None:
             self.loadModel(filename)
-        else:
-            assert n >= m
-            
+        else:            
             self.m = m
             self.n = n
             
@@ -137,6 +135,7 @@ class HMM(object):
             type:    (numpy.array, numpy.array)
             param:   Cumulative distribution of Transition matrix
                      and Cumulative distribtion of Observation matrix
+                     Cumulative matrices are used to randomly generate synthetic data...
         '''
         return (np.add.accumulate(self.T, axis = 0), np.add.accumulate(self.O, axis = 0))
         
@@ -171,7 +170,8 @@ class HMM(object):
         prob = np.dot(np.ones(self.m), prob)
 #        prob = math.log(np.dot(np.ones(self.m), prob))
         return prob
-    
+
+#    alpha and beta are used for EM algorithm    
     def alpha(self, seq):
         '''
         @seq:
@@ -205,18 +205,8 @@ class HMM(object):
         for i in xrange(t-1,0,-1):
             grids[i-1,:] = np.dot(grids[i,:], self.T * self.O[seq[i],:][:,np.newaxis])
         return grids
-    
-#    def beta2(self, seq):
-#        t = len(seq)
-#        grids = np.zeros((t, self.m), dtype = np.float)
-#        grids[t-1,:] = 1.0
-#        for i in xrange(t-1,0,-1):
-#            for j in xrange(0, self.m):
-#                for k in xrange(0, self.m):
-#                    grids[i-1,j] += self.T[k,j] * self.O[seq[i],k] * grids[i,k]
-#        return grids
-        
-        
+            
+                
     def gendata(self, dsize, sqlen = 100):
         '''
         @dsize:

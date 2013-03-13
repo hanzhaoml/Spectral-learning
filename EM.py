@@ -10,7 +10,6 @@
 
 import numpy as np
 
-
 class BaumWelch(object):
     '''
     This class is used to learning HMM using Baum-Welch algorithm,
@@ -32,9 +31,11 @@ class BaumWelch(object):
         norms = np.sum(self.sd)
         self.sd /= norms
     
+    
     def predict(self, seq):
         return np.sum(self.alpha(seq)[len(seq)-1,:])
-        
+    
+    
     def alpha(self, seq):
         '''
         @seq:
@@ -75,7 +76,7 @@ class BaumWelch(object):
         Baum-Welch algorithm, also known as the Forward-Backward Algorithm.
         The Baum-Welch algorithm lies under the framework of EM algorithm.
         '''
-        threshold = self.m / 1000.0
+        threshold = self.m / 100.0
         iters = 0
         while True:
 #            gamma_1 is used to update for initial distribution, accumulating over all observations
@@ -88,7 +89,7 @@ class BaumWelch(object):
 #            For each observation sequence, update the frequency statistics
             for seq in trainset:
                 l = len(seq)
-#                temporal estimator of alpha, beta, sigma_t, gamma_t
+#                temporary estimator of alpha, beta, sigma_t, gamma_t
                 alpha = self.alpha(seq)
                 beta = self.beta(seq)
                 
@@ -115,82 +116,6 @@ class BaumWelch(object):
                 break
             self.T = sigma
             self.O = gamma
-        
-                
-#        for seq in trainset:
-#            print '-' * 50
-#            if len(set(seq[:-1])) < self.n:
-#                continue
-#            print 'length of sequence:', len(seq)
-#            print 'Observation sequence:', seq
-#            print 'Current self.T:'
-#            print self.T
-#            print 'Current self.O:'
-#            print self.O
-#            count += 1
-#            sigma = np.zeros((self.m, self.m), dtype = np.float)
-#            gamma = np.zeros((self.n, self.m), dtype = np.float)
-#            t = len(seq)
-##            print '%f%%' %(count * 100 / sz)
-#            
-#            alpha = self.alpha(seq)
-#            beta = self.beta(seq)
-#            
-##            Re-estimate of stationary distribution
-#            for i in xrange(self.m):
-#                for j in xrange(self.m):
-#                    sigma[j,i] = alpha[0,i] * self.T[j,i] * self.O[seq[1],j] * beta[1, j]
-#            ssum = np.sum(sigma)
-##            print 'sigma:'
-##            print sigma
-##            print 'sum of stationary distribution', np.sum(sigma)
-##            print 'Alpha:'
-##            print alpha
-##            print 'Beta:'
-##            print beta
-#            
-#            sigma /= ssum 
-#            self.sd = np.sum(sigma, axis = 0)
-#            self.sd /= np.sum(self.sd)
-#            sigma = np.zeros((self.m, self.m), dtype = np.float)
-###            Re-estimate of T and O
-#            for l in xrange(0, t-1):
-#                sigma_t = np.zeros((self.m, self.m), dtype = np.float)
-#                gamma_t = np.zeros((self.m, self.m), dtype = np.float)
-#                for i in xrange(self.m):
-#                    for j in xrange(self.m):
-#                        sigma_t[j,i] = alpha[l,i] * self.T[j,i] * self.O[seq[l+1],j] * beta[l+1,j]
-#                        gamma_t[seq[l],i] += sigma_t[j, i]
-##                print 'l = ', l
-##                print 'sigma_t:'
-##                print sigma_t
-##                print 'gamma_t:'
-##                print gamma_t
-##                print 'sum of sigma_t:', np.sum(sigma_t, axis = 0)
-##                print 'sum sigma_t:', np.sum(sigma_t)
-##                print '-' * 50
-#                gamma_t /= np.sum(sigma_t)
-#                sigma_t /= np.sum(sigma_t)
-#                gamma += gamma_t
-#                sigma += sigma_t
-##            print '#' * 50
-##            print 'np.sum(gamma):', np.sum(gamma, axis = 0)[np.newaxis,:]
-##            print 'Gamma for a sequence:'
-##            print gamma
-##            print 'Sigma for a sequence:'
-##            print sigma
-##            print '*' * 50
-#            self.T = sigma / np.sum(gamma, axis = 0)[np.newaxis,:]
-#            self.O = gamma / np.sum(gamma, axis = 0)[np.newaxis,:]
-##            print 'Transition matrix:'
-##            print self.T
-##            print '-' * 50
-##            print 'Emission matrix:'
-##            print self.O
-##            print '=' * 75
-##       
-        
-        
         
         
 def main():
