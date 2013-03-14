@@ -30,14 +30,9 @@ class SPClassifier(object):
         data = self._loadData(trainfile)
         trsize = len(data)
         self.trainSet = data[:trsize]
-        self.testSet = [[x1, x2, x3, x4] for x1 in xrange(4)  for x2 in xrange(4) 
-                                         for x3 in xrange(4)  for x4 in xrange(4)]
-
-#        self.testSet = data[trsize:]
-#        self.testSet = data[trsize:trsize+1]
-#        self.testSet = self._loadData(testfile)
+        self.testSet = self._loadData(testfile)
         self.learner = SpectralLearner()
-        self.emlearner = BaumWelch(4, 4)
+#        self.emlearner = BaumWelch(4, 4)
         
     def _loadData(self, filename):
         '''
@@ -61,7 +56,7 @@ class SPClassifier(object):
             type:    string
             param:   Model path of HMM parameters
         '''
-        self.model = HMM(filename = modelpath)
+        self.model = HMM(filename=modelpath)
     
     def train(self):
         t_start = time.time()
@@ -69,10 +64,10 @@ class SPClassifier(object):
         t_end = time.time()
         print 'Time used for Spectral learning:', (t_end - t_start)
         
-        t_start = time.time()
-        self.emlearner.train(self.trainSet)
-        t_end = time.time()
-        print 'Time used for Expectation Maximization:', (t_end - t_start)
+#        t_start = time.time()
+#        self.emlearner.train(self.trainSet)
+#        t_end = time.time()
+#        print 'Time used for Expectation Maximization:', (t_end - t_start)
     
     def KLDiv(self, tprob, sprob):
         '''
@@ -84,8 +79,8 @@ class SPClassifier(object):
             type:    list()
             param:   Simulated probability distribution 
         '''
-        tprob = np.array(tprob, dtype = np.float)
-        sprob = np.array(sprob, dtype = np.float)
+        tprob = np.array(tprob, dtype=np.float)
+        sprob = np.array(sprob, dtype=np.float)
         return np.sum(tprob * np.log(tprob / sprob))
         
     def draw(self, tprob, sprob, eprob):
@@ -99,9 +94,9 @@ class SPClassifier(object):
             param:   Simulated probability distribution 
         '''
         coor = range(len(tprob))
-        plt.plot(coor, tprob, label = 'True distribution', color = 'blue', linewidth = 2)
-        plt.plot(coor, sprob, label = 'Spectral learning distribution', color = 'red', linewidth = 2)
-        plt.plot(coor, eprob, laebl = 'EM-algorithm distribution', color = 'green', linewidth = 2)
+        plt.plot(coor, tprob, label='True distribution', color='blue', linewidth=2)
+        plt.plot(coor, sprob, label='Spectral learning distribution', color='red', linewidth=2)
+        plt.plot(coor, eprob, laebl='EM-algorithm distribution', color='green', linewidth=2)
         plt.xlabel('Observation sequence')
         plt.ylabel('Probability')
         plt.title('Probability distribution of P[X1, X2, X3, X4]')
@@ -109,7 +104,18 @@ class SPClassifier(object):
         plt.legend()
         plt.show()
         
-
+    
+    def SLTesting(self, outfile):
+        records = list()
+        for seq in self.testSet:
+            modelprob = self.model.probability(seq)
+            slprob = self.learner.predict(seq)
+            records.append((modelprob, slprob))
+        with file(outfile, 'w') as out:
+            out.write('Model probability\tSpectral learning probability\n')
+            for idx, record in enumerate(records):
+                out.write(str(record[0]) + '\t' + str(record[1]) + 
+                          '\t' + str(self.testSet[idx]) + '\n')
         
     def test(self, outfile):
         records = list()
@@ -137,8 +143,8 @@ class SPClassifier(object):
             eprob = [record[2] for record in records]
             speckldiv = self.KLDiv(tprob, sprob)
             emkldiv = self.KLDiv(tprob, eprob)
-            out.write('Spectral learning Kullback-Leibler Divergence: %f\n' %(speckldiv))
-            out.write('EM algorithm Kullback-Leibler Divergence: %f\n' %(emkldiv))
+            out.write('Spectral learning Kullback-Leibler Divergence: %f\n' % (speckldiv))
+            out.write('EM algorithm Kullback-Leibler Divergence: %f\n' % (emkldiv))
 #            self.draw(tprob, sprob, eprob)
     
 def main(modelpath, trainfile, testfile):
@@ -163,28 +169,33 @@ def main(modelpath, trainfile, testfile):
     print 'Time used to train classifier:', t_end - t_start, ' seconds'
     print '-' * 50
     
-    print 'HMM Model Transition matrix'
-    print classifier.model.T;
-    
-    print 'HMM Model Emission matrix'
-    print classifier.model.O
-    
-    print 'HMM Model stationary distribution'
-    print classifier.model.sd
-    
-    print 'EM Transition matrix'
-    print classifier.emlearner.T
-    
-    print 'EM Emission matrix'
-    print classifier.emlearner.O
-    
-    print 'EM stationary distribution'
-    print classifier.emlearner.sd
     t_start = time.time()
-    classifier.test('records.txt')
-    t_end =  time.time()
-    print 'Time used to test classifier:', t_end - t_start, ' seconds'
-    print '-' * 50
+    classifier.SLTesting('SL.log')
+    t_end = time.time()
+    print 'Time used to test Spectral learning...', t_end - t_start, ' seconds'
+    
+#    print 'HMM Model Transition matrix'
+#    print classifier.model.T;
+#    
+#    print 'HMM Model Emission matrix'
+#    print classifier.model.O
+#    
+#    print 'HMM Model stationary distribution'
+#    print classifier.model.sd
+#    
+#    print 'EM Transition matrix'
+#    print classifier.emlearner.T
+#    
+#    print 'EM Emission matrix'
+#    print classifier.emlearner.O
+#    
+#    print 'EM stationary distribution'
+#    print classifier.emlearner.sd
+#    t_start = time.time()
+#    classifier.test('records.txt')
+#    t_end =  time.time()
+#    print 'Time used to test classifier:', t_end - t_start, ' seconds'
+#    print '-' * 50
     
     
 if __name__ == '__main__':
