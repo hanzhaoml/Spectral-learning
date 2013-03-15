@@ -1,0 +1,26 @@
+Time used to load data: 5.05377197266  seconds
+--------------------------------------------------
+Time used to load HMM model: 0.040904045105  seconds
+--------------------------------------------------
+++++++++++++++++++++++++++++++++++++++++++++++++++
+Training set: 200000
+Estimating n from observable data...
+Input size: 9798394
+Estimate P_1, P_21 and P_3x1...
+Normalizing P_1, P_21 and P_3x1...
+--------------------------------------------------
+Diagonal matrix of SVD:
+[  2.54982123e-01   6.81761121e-03   3.05612645e-03   7.49569507e-05]
+Constructing b_1, b_inf and B_x...
+sum of b1 vector: 1.0
+b1 vector:
+[ 0.44535887 -0.94297889  0.92064859  0.57697142]
+sum of binf vector: 4.0
+binf vector:
+[ 1.  1.  1.  1.]
+--------------------------------------------------
+End training...
+Time used to train classifier: 48.9701600075  seconds
+--------------------------------------------------
+Time used to test classifier: 29.6859629154  seconds
+--------------------------------------------------
