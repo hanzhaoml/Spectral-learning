@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 from hmm import HMM
 from learner import SpectralLearner
 from EM import BaumWelch
+from OOMLearner import OOMLearner
 
 class SPClassifier(object):
     
@@ -31,7 +32,8 @@ class SPClassifier(object):
         trsize = len(data)
         self.trainSet = data[:trsize]
         self.testSet = self._loadData(testfile)
-        self.learner = SpectralLearner()
+        self.sl_learner = SpectralLearner()
+        self.oom_learner = OOMLearner()
 #        self.emlearner = BaumWelch(4, 4)
         
     def _loadData(self, filename):
@@ -60,9 +62,10 @@ class SPClassifier(object):
     
     def train(self):
         t_start = time.time()
-        self.learner.train(self.trainSet)
+        self.sl_learner.train(self.trainSet)
+        self.oom_learner.train(self.trainSet)
         t_end = time.time()
-        print 'Time used for Spectral learning:', (t_end - t_start)
+        print 'Time used for Spectral learner and OOM learner:', (t_end - t_start)
         
 #        t_start = time.time()
 #        self.emlearner.train(self.trainSet)
@@ -105,17 +108,21 @@ class SPClassifier(object):
         plt.show()
         
     
-    def SLTesting(self, outfile):
+    def testing(self, outfile):
         records = list()
         for seq in self.testSet:
-            modelprob = self.model.probability(seq)
-            slprob = self.learner.predict(seq)
-            records.append((modelprob, slprob))
+            model_prob = self.model.probability(seq)
+            sl_prob = self.sl_learner.predict(seq)
+            oom_prob = self.oom_learner.predict(seq)
+            records.append((model_prob, sl_prob, oom_prob))
+    
         with file(outfile, 'w') as out:
-            out.write('Model probability\tSpectral learning probability\n')
+            out.write('Model probability\tSpectral learning probability\t \
+                       OOM learning probability\n')
             for idx, record in enumerate(records):
-                out.write(str(record[0]) + '\t' + str(record[1]) + 
-                          '\t' + str(self.testSet[idx]) + '\n')
+                line = '%e\t%e\t%e\t%s\n' %(record[0], record[1], record[2], self.testSet[idx])
+                out.write(line)
+                
         
     def test(self, outfile):
         records = list()
@@ -170,9 +177,9 @@ def main(modelpath, trainfile, testfile):
     print '-' * 50
     
     t_start = time.time()
-    classifier.SLTesting('SL.log')
+    classifier.testing('SL_OOM.log')
     t_end = time.time()
-    print 'Time used to test Spectral learning...', t_end - t_start, ' seconds'
+    print 'Time used to test Spectral learning and OOM learning...', t_end - t_start, ' seconds'
     
 #    print 'HMM Model Transition matrix'
 #    print classifier.model.T;

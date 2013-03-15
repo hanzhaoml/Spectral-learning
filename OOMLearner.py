@@ -37,10 +37,10 @@ class OOMLearner(object):
         print 'Estimating number of observation state from training data...'
         self.n = len(set([ob for seq in seqlist for ob in seq]))
         # Initialization
-        self.w0 = np.zeros(self.n, dtype = np.float)
-        self.V = np.zeros((self.n, self.n), dtype = np.float)
-        self.W = [np.zeros((self.n, self.n), dtype = np.float) for i in xrange(self.n)]
-        self.tao = [np.zeros((self.n, self.n), dtype = np.float) for i in xrange(self.n)]
+        self.w0 = np.zeros(self.n, dtype=np.float)
+        self.V = np.zeros((self.n, self.n), dtype=np.float)
+        self.W = [np.zeros((self.n, self.n), dtype=np.float) for i in xrange(self.n)]
+        self.tao = [np.zeros((self.n, self.n), dtype=np.float) for i in xrange(self.n)]
         
         
         print 'Number of training list:', len(seqlist)
@@ -68,13 +68,23 @@ class OOMLearner(object):
         inverse_v = np.linalg.inv(self.V)
         for idx in xrange(len(self.W)):
             self.tao[idx] = np.dot(self.W[idx], inverse_v)
-        
-        print 'Finished training...'
-        for idx in xrange(len(self.W)):
-            print '-' * 50
-            print self.tao[idx]
+                
+        norms = np.sum(np.sum(self.tao, axis=0), axis=0)
+        for idx in xrange(len(self.tao)):
+            self.tao[idx] /= norms[np.newaxis, :]
+
         print '=' * 50
-        
+        print 'Observable operators...'
+        for idx in xrange(len(self.tao)):
+            print self.tao[idx]
+            print np.sum(self.tao[idx], axis=0)
+            print '-' * 50
+        norms = np.sum(np.sum(self.tao, axis=0), axis=0)
+        print norms
+        print '=' * 50
+        print self.w0
+        print '*' * 50
+    
     
     def predict(self, seq):
         '''
