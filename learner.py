@@ -107,48 +107,16 @@ class SpectralLearner(object):
         (U, S, V) = np.linalg.svd(self.P_21)
         # TODO(Keira):    Decide whether it should discard very small
         #                 singular values
-#        self.S = S[S > self.threshold]
-        self.S = S;
+        self.S = S[S > self.threshold]
         
         self.m = self.S.shape[0]
         self.U = U[:, 0:self.m]
         self.V = V[0:self.m, :]
-        
-        print '=' * 50        
-        print 'Left singular matrix of P_21 SVD:'
-        print self.U
-        print '*' * 50
-        print 'Singular values of P_21 SVD:'
-        print self.S
-        print '*' * 50
-        print 'Transpose of right singular matrix of P_21 SVD:'
-        print self.V
-        print '=' * 50
-        
-#        # Checking whether U is an orthogonal matrix or not
-#        print 'U^T * U:'
-#        print np.dot(self.U.T, self.U)
-#        print '-' * 50
-#        # Checking whether V^T is an orthogonal matrix or not
-#        print 'V^T * V:'
-#        print np.dot(self.V, self.V.T)
-#        print '-' * 50
                 
-        # TODO(Keira)    U should be normalized by column vector of norm 2
-        #                but not row vector of norm 1. U is the left singular
-        #                matrix of P_21
-#        norms = np.sum(self.U, axis=1)
-#        self.U /= norms[:, np.newaxis]
-        
-#        print 'm:', self.m  
-#        print '-' * 50
-#        print 'U matrix:', self.U
-        
         print 'Constructing b_1, b_inf and B_x...'
         # Compute b1, binf and Bx
         # self.factor = (P_21^{T} * U)^{+}, which is used to accelerate the computation
         self.factor = np.linalg.pinv(np.dot(self.P_21.T, self.U))
-        norms = np.sum(self.factor, axis=1)
                 
         self.b1 = np.dot(self.U.T, self.P_1)
         
@@ -192,8 +160,6 @@ class SpectralLearner(object):
         for ob in seq:
             prob = np.dot(self.Bx[ob], prob)
         prob = np.dot(self.binf.T, prob)
-        for i in xrange(len(seq)):
-            prob /= self.n
         return prob
         
     def checkSparse(self):

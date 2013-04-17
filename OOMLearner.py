@@ -38,10 +38,10 @@ class OOMLearner(object):
         self.n = len(set([ob for seq in seqlist for ob in seq]))
         # Initialization
         self.w0 = np.zeros(self.n, dtype=np.float)
+        self.winf = np.zeros(self.n, dtype=np.float)
         self.V = np.zeros((self.n, self.n), dtype=np.float)
         self.W = [np.zeros((self.n, self.n), dtype=np.float) for i in xrange(self.n)]
         self.tao = [np.zeros((self.n, self.n), dtype=np.float) for i in xrange(self.n)]
-        
         
         print 'Number of training list:', len(seqlist)
         # Inituition: W0, V, W learn to be the stationary distribution of Hidden Markov Model
@@ -68,22 +68,7 @@ class OOMLearner(object):
         inverse_v = np.linalg.inv(self.V)
         for idx in xrange(len(self.W)):
             self.tao[idx] = np.dot(self.W[idx], inverse_v)
-                
-        norms = np.sum(np.sum(self.tao, axis=0), axis=0)
-        for idx in xrange(len(self.tao)):
-            self.tao[idx] /= norms[np.newaxis, :]
-
-        print '=' * 50
-        print 'Observable operators...'
-        for idx in xrange(len(self.tao)):
-            print self.tao[idx]
-            print np.sum(self.tao[idx], axis=0)
-            print '-' * 50
-        norms = np.sum(np.sum(self.tao, axis=0), axis=0)
-        print norms
-        print '=' * 50
-        print self.w0
-        print '*' * 50
+        self.winf = np.dot(self.w0.T, inverse_v)
     
     
     def predict(self, seq):
@@ -100,7 +85,8 @@ class OOMLearner(object):
         prob = self.w0
         for ob in seq:
             prob = np.dot(self.tao[ob], prob)
-        return np.sum(prob)
+        prob = np.dot(self.winf, prob)
+        return prob
         
         
 def main():

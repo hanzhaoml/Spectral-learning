@@ -49,7 +49,6 @@ class SPClassifier(object):
         with file(filename, 'r') as f:
             reader = csv.reader(f)
             data = [map(int, row) for row in reader]
-            
         return data
     
     def loadModel(self, modelpath):
