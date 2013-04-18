@@ -12,7 +12,8 @@
 #Observable operator models for discrete stochastic time series
 import numpy as np
 
-
+# This kind of learning algorithm is totally wrong because it cannot 
+# satisfy the inverse assumption
 class OOMLearner(object):
     '''
     This class is designed by Han Zhao(Keira) to implement the 
@@ -95,7 +96,6 @@ def main():
 
 if __name__ == '__main__':
     main()
-        
         
         
         

@@ -33,7 +33,7 @@ class SPClassifier(object):
         self.trainSet = data[:trsize]
         self.testSet = self._loadData(testfile)
         self.sl_learner = SpectralLearner()
-        self.oom_learner = OOMLearner()
+#        self.oom_learner = OOMLearner()
 #        self.emlearner = BaumWelch(4, 4)
         
     def _loadData(self, filename):
@@ -62,7 +62,7 @@ class SPClassifier(object):
     def train(self):
         t_start = time.time()
         self.sl_learner.train(self.trainSet)
-        self.oom_learner.train(self.trainSet)
+#        self.oom_learner.train(self.trainSet)
         t_end = time.time()
         print 'Time used for Spectral learner and OOM learner:', (t_end - t_start)
         
@@ -112,14 +112,13 @@ class SPClassifier(object):
         for seq in self.testSet:
             model_prob = self.model.probability(seq)
             sl_prob = self.sl_learner.predict(seq)
-            oom_prob = self.oom_learner.predict(seq)
-            records.append((model_prob, sl_prob, oom_prob))
+#            oom_prob = self.oom_learner.predict(seq)
+            records.append((model_prob, sl_prob))
     
         with file(outfile, 'w') as out:
-            out.write('Model probability\tSpectral learning probability\t \
-                       OOM learning probability\n')
+            out.write('Model probability\tSpectral learning probability\n')
             for idx, record in enumerate(records):
-                line = '%e\t%e\t%e\t%s\n' %(record[0], record[1], record[2], self.testSet[idx])
+                line = '%e\t%e\t%s\n' %(record[0], record[1], self.testSet[idx])
                 out.write(line)
                 
         
@@ -176,32 +175,9 @@ def main(modelpath, trainfile, testfile):
     print '-' * 50
     
     t_start = time.time()
-    classifier.testing('SL_OOM.log')
+    classifier.testing('HMM_SL.log')
     t_end = time.time()
     print 'Time used to test Spectral learning and OOM learning...', t_end - t_start, ' seconds'
-    
-#    print 'HMM Model Transition matrix'
-#    print classifier.model.T;
-#    
-#    print 'HMM Model Emission matrix'
-#    print classifier.model.O
-#    
-#    print 'HMM Model stationary distribution'
-#    print classifier.model.sd
-#    
-#    print 'EM Transition matrix'
-#    print classifier.emlearner.T
-#    
-#    print 'EM Emission matrix'
-#    print classifier.emlearner.O
-#    
-#    print 'EM stationary distribution'
-#    print classifier.emlearner.sd
-#    t_start = time.time()
-#    classifier.test('records.txt')
-#    t_end =  time.time()
-#    print 'Time used to test classifier:', t_end - t_start, ' seconds'
-#    print '-' * 50
     
     
 if __name__ == '__main__':

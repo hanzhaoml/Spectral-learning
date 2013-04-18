@@ -7,7 +7,8 @@
 # Distributed under terms of the Tsinghua University license.
 
 import numpy as np
-import math
+import sys
+import csv
 
 class SpectralLearner(object):
     '''This class implements the spectral learning algorithm described in:
@@ -16,7 +17,7 @@ class SpectralLearner(object):
     '''
     
     def __init__(self):
-        self.threshold = 1e-6
+        pass
     
     def train(self, trilst):
         '''
@@ -105,33 +106,27 @@ class SpectralLearner(object):
         # Singular Value Decomposition
         # Keep all the positive singular values
         (U, S, V) = np.linalg.svd(self.P_21)
-        # TODO(Keira):    Decide whether it should discard very small
-        #                 singular values
-        self.S = S[S > self.threshold]
-        
-        self.m = self.S.shape[0]
+#        self.m = np.linalg.matrix_rank(self.P_21)
+        self.m = 4
+        print '-' * 50
+        print 'Singular values of V:'
+        print S
+        print '-' * 50       
         self.U = U[:, 0:self.m]
         self.V = V[0:self.m, :]
-                
+        print 'Estimation of m:', self.m
+        print 'Estimation of n:', self.n
         print 'Constructing b_1, b_inf and B_x...'
         # Compute b1, binf and Bx
         # self.factor = (P_21^{T} * U)^{+}, which is used to accelerate the computation
         self.factor = np.linalg.pinv(np.dot(self.P_21.T, self.U))
-                
-        self.b1 = np.dot(self.U.T, self.P_1)
+        print '=' * 50
+        print 'Factor, V^TU'
+        print self.factor
+        print '=' * 50
         
-        s = np.sum(self.b1)
-        print 'sum of b1 vector:', s
-        print 'b1 vector:'
-        print self.b1
-        
-        self.binf = np.dot(self.factor, self.P_1)
-        s = np.sum(self.binf)
-        print 'sum of binf vector:', s
-        print 'binf vector:'
-        print self.binf
-        print '-' * 50
-        
+        self.b1 = np.dot(self.U.T, self.P_1)        
+        self.binf = np.dot(self.factor, self.P_1)        
         
         self.Bx = [np.zeros((self.m, self.m), dtype=np.float) for i in xrange(self.n)]
         for index in xrange(len(self.Bx)):
@@ -189,13 +184,18 @@ class SpectralLearner(object):
         print '-' * 50
         
         
-def main():
-    pass
+def main(filename):
+    with file(filename, 'r') as f:
+        reader = csv.reader(f)
+        data = [map(int, row) for row in reader]
+    sp_learner = SpectralLearner()
+    sp_learner.train(data)
+    
 
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1])
 
         
         

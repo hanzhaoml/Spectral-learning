@@ -269,6 +269,7 @@ class HMM(object):
             self.cT = np.load(f)
             self.cO = np.load(f)
             self.sd = np.load(f)
+
             
 class oom_operator(object):
     '''
@@ -293,6 +294,7 @@ class oom_operator(object):
         self.V = np.dot(hmm.O, hmm.T) * hmm.sd
         self.V = np.dot(self.V, hmm.O.T)
         self.V_inverse = np.linalg.inv(self.V)
+#        print 'Rank of V:', np.linalg.matrix_rank(self.V)
 #        Wa = O*Tao_a*T*diag(pi)*O'
         self.W = [np.zeros((self.n, self.n), dtype=np.float) for i in xrange(self.n)]
         for i in xrange(self.n):
@@ -302,9 +304,51 @@ class oom_operator(object):
         self.taoprime = [np.zeros((self.n, self.n), dtype=np.float) for i in xrange(self.n)]
         for i in xrange(self.n):
             self.taoprime[i] = np.dot(self.W[i], self.V_inverse)
-        self.winf = np.dot(hmm.O.T, self.V_inverse)
-            
-            
+            self.taoprime[i][np.abs(self.taoprime[i]) < 1e-16] = 0.0
+#        self.winf = np.dot(self.w0.T, self.V_inverse)
+#        just another trial, it should be right now
+        self.winf = np.dot(np.ones(self.m), np.linalg.pinv(hmm.O))
+        
+        
+    def print_out(self, hmm):
+        '''
+        Print out parameters of current oom_operator
+        '''
+        print 'Parameters in Hidden Markov Model'
+        print 'Transition matrix:'
+        print hmm.T
+        print '-' * 50
+        print 'Emission matrix:'
+        print hmm.O
+        print '-' * 50
+        print 'Initial distribution:'
+        print hmm.sd
+        print '=' * 50
+        
+        print 'Parameters in Observable Operator Model'
+        print 'V matrix:'
+        print self.V
+        print '-' * 50
+        print 'V inverse matrix:'
+        print self.V_inverse
+        print '-' * 50
+        print 'V*V^-1 matrix:'
+        print np.dot(self.V, self.V_inverse)
+        print '-' * 50
+        print 'V^-1*V matrix:'
+        print np.dot(self.V_inverse, self.V)
+        print '=' * 50
+        print 'Tao_a = T*diag(O_a) matrix:'
+        for matrix in self.tao:
+            print matrix
+            print '-' * 50
+        print '=' * 50
+        print 'W_a = OTao_a Tdiag(pi)*O^T'
+        for matrix in self.W:
+            print matrix
+            print '-' * 50
+        print '=' * 50
+    
     def prob_forward(self, seq):
         prob = self.pi
         for ob in seq:
@@ -320,23 +364,86 @@ class oom_operator(object):
         prob = np.dot(self.winf, prob)
         return prob
     
+
+class spectral_learner(object):
+    '''
+    Build true spectral learner based on the given HMM
+    '''
+    def __init__(self, hmm):
+        '''
+        Check two ways of computing observation probability:
+        1    Pr = 1*tao*pi
+        2    Pr = winf*taoprime*w0
+        '''
+        self.m = hmm.m
+        self.n = hmm.n
+        self.pi = hmm.sd
+#        tao_a = T*diag(O_a)
+        self.tao = [np.zeros((self.n, self.n), dtype=np.float) for i in xrange(self.n)]
+        for i in xrange(self.n):
+            self.tao[i] = hmm.T * hmm.O[i,:]
+
+#        Begining of spectral learning
+#        V = O*T*diag(pi)*O^T
+        self.V = np.dot(hmm.O, hmm.T) * hmm.sd
+        self.V = np.dot(self.V, hmm.O.T)
+        (self.U, S, K) = np.linalg.svd(self.V)
+#        Only need first m column vectors of U
+        self.U = self.U[:, 0: self.m]
+        self.factor = np.dot(self.U.T, hmm.O)
+        
+        self.factor_inverse = np.linalg.inv(self.factor)
+        
+        self.w0 = np.dot(self.factor, hmm.sd)
+        self.winf = np.dot(np.ones(self.m), np.linalg.inv(self.factor))
+        self.W = [np.zeros((self.n, self.n), dtype=np.float) for i in xrange(self.n)]
+        for i in xrange(self.n):
+            self.W[i] = np.dot(self.factor, self.tao[i])
+            self.W[i] = np.dot(self.W[i], self.factor_inverse)
+        
+
+    def prob_forward(self, seq):
+        prob = self.pi
+        for ob in seq:
+            prob = np.dot(self.tao[ob], prob)
+        prob = np.dot(np.ones(self.m), prob)
+        return prob
+    
+        
+    def prob_operator(self, seq):
+        prob = self.w0
+        for ob in seq:
+            prob = np.dot(self.W[ob], prob)
+        prob = np.dot(self.winf, prob)
+        return prob
+
+        
+    def print_out(self):
+        pass
+    
     
     
 def main(modelpath, trainset):
     hmm = HMM(filename=modelpath)
     t_start = time.time()
-    operator = oom_operator(hmm)
+    operator = spectral_learner(hmm)
     t_end = time.time()
-    print 'Time used to train oom_operator:', t_end-t_start
+    print 'Time used to train spectral learner:', t_end-t_start
+#    operator.print_out(hmm)
     with file(trainset, 'r') as f:
         reader = csv.reader(f)
         data = [map(int, row) for row in reader]
-    print 'HMM_probability\tOOM_forward\tOOM_Operator'
+    print 'HMM_probability\t\tSpectral_forward\t\tSpectral_Operator'
     for seq in data:
-        print hmm.probability(seq), operator.prob_forward(seq), operator.prob_operator(seq)
+        print hmm.probability(seq), '\t\t', operator.prob_forward(seq), '\t\t', \
+                operator.prob_operator(seq), '\t\t', len(seq)
     
     
 
 if __name__ == '__main__':
+    if len(sys.argv) < 3:
+        print 'usage: modelpath trainfile'
+        exit()
     main(sys.argv[1], sys.argv[2])
+
 
