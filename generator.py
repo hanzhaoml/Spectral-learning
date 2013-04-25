@@ -5,13 +5,12 @@
 # Copyright (C) 2013 KeiraZhao <zhaohan2009011312@gmail.com>
 #
 # Distributed under terms of the Tsinghua University license.
-
-
 from hmm import HMM
 
 import sys
 import csv
 import time
+
 
 if __name__ == '__main__':
     

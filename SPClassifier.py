@@ -14,7 +14,6 @@ import matplotlib.pyplot as plt
 from hmm import HMM
 from learner import SpectralLearner
 from EM import BaumWelch
-from OOMLearner import OOMLearner
 
 class SPClassifier(object):
     
@@ -62,14 +61,9 @@ class SPClassifier(object):
     def train(self):
         t_start = time.time()
         self.sl_learner.train(self.trainSet)
-#        self.oom_learner.train(self.trainSet)
         t_end = time.time()
         print 'Time used for Spectral learner and OOM learner:', (t_end - t_start)
         
-#        t_start = time.time()
-#        self.emlearner.train(self.trainSet)
-#        t_end = time.time()
-#        print 'Time used for Expectation Maximization:', (t_end - t_start)
     
     def KLDiv(self, tprob, sprob):
         '''
@@ -116,6 +110,7 @@ class SPClassifier(object):
             records.append((model_prob, sl_prob))
     
         with file(outfile, 'w') as out:
+            out.write('The value of m used in spectral learning algorithm: %d\n' % self.sl_learner.m)
             out.write('Model probability\tSpectral learning probability\n')
             for idx, record in enumerate(records):
                 line = '%e\t%e\t%s\n' %(record[0], record[1], self.testSet[idx])
