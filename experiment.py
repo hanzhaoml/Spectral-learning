@@ -14,7 +14,6 @@ import numpy as np
 from hmm import HMM
 from learner import SpectralLearner
 
-
 class Experimenter(object):
     '''
     This class is built to facilitate the experiments of different learning

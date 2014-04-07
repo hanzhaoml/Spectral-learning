@@ -10,6 +10,7 @@ import sys
 import time
 import csv
 
+from pprint import pprint
 
 class HMM(object):
     '''This class defines the model of HMM (Hidden Markov Model).
@@ -287,8 +288,7 @@ class spectral_learner(object):
         for ob in seq:
             prob = np.dot(self.tao[ob], prob)
         prob = np.dot(np.ones(self.m), prob)
-        return prob
-    
+        return prob    
         
     def prob_operator(self, seq):
         prob = self.w0
@@ -297,19 +297,13 @@ class spectral_learner(object):
         prob = np.dot(self.winf, prob)
         return prob
 
-        
-    def print_out(self):
-        pass
-    
-    
-    
+
 def main(modelpath, trainset):
     t_start = time.time()
     hmm = HMM(filename=modelpath)
     operator = spectral_learner(hmm)
     t_end = time.time()
     print 'Time used to train spectral learner:', t_end - t_start
-    operator.print_out(hmm)
     with file(trainset, 'r') as f:
         reader = csv.reader(f)
         data = [map(int, row) for row in reader]
@@ -319,10 +313,8 @@ def main(modelpath, trainset):
                 operator.prob_operator(seq), '\t\t', len(seq)
     
     
-
 if __name__ == '__main__':
     if len(sys.argv) < 3:
         print 'usage: modelpath trainfile'
         exit()
     main(sys.argv[1], sys.argv[2])
-
