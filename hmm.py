@@ -58,7 +58,6 @@ class HMM(object):
             (self.cT, self.cO) = self._build()
             self.sd = self._converge()
         
-
     def _randomT(self, m):
         '''
         @m:
@@ -80,7 +79,6 @@ class HMM(object):
             randm /= norms
             if np.linalg.matrix_rank(randm) == m:
                 return randm
-
     
     def _randomO(self, m, n):
         '''
@@ -103,7 +101,6 @@ class HMM(object):
             if np.linalg.matrix_rank(rando) == m:
                 return rando
 
-
     def _build(self):
         '''
         @return:
@@ -112,8 +109,7 @@ class HMM(object):
                      and Cumulative distribtion of Observation matrix
                      Cumulative matrices are used to randomly generate synthetic data...
         '''
-        return (np.add.accumulate(self.T, axis=0), np.add.accumulate(self.O, axis=0))
-        
+        return (np.add.accumulate(self.T, axis=0), np.add.accumulate(self.O, axis=0))        
     
     def _converge(self):
         '''
@@ -136,6 +132,9 @@ class HMM(object):
             type:    numpy.float
             param:   The probability of generating this observation sequence
                      from model
+        @attention:  This implementation uses the matrix operator notation to do the 
+                     inference task, which may be low efficient compared with using 
+                     forward-backward algorithm.
         '''
         prob = self.sd
         for ob in seq:
@@ -160,8 +159,8 @@ class HMM(object):
         grids = np.zeros((t, self.m), dtype=np.float)
         grids[0, :] = self.sd * self.O[seq[0], :]
         for i in xrange(1, t):
-            grids[i,:] = np.dot(self.T, grids[i-1,:])
-            grids[i,:] *= self.O[seq[i],:]
+            grids[i, :] = np.dot(self.T, grids[i - 1, :])
+            grids[i, :] *= self.O[seq[i], :]
         return grids
     
     def beta(self, seq):
@@ -174,14 +173,13 @@ class HMM(object):
             param:    P(Ot,Ot+1,...OT|ST, Model)
         '''
         t = len(seq)
-        grids = np.zeros((t, self.m), dtype = np.float)
-        grids[t-1,:] = 1.0
-        for i in xrange(t-1,0,-1):
-            grids[i-1,:] = np.dot(grids[i,:], self.T * self.O[seq[i],:][:,np.newaxis])
+        grids = np.zeros((t, self.m), dtype=np.float)
+        grids[t - 1, :] = 1.0
+        for i in xrange(t - 1, 0, -1):
+            grids[i - 1, :] = np.dot(grids[i, :], self.T * self.O[seq[i], :][:, np.newaxis])
         return grids
             
-                
-    def gendata(self, dsize, sqlen = 100):
+    def gendata(self, dsize, sqlen=100):
         '''
         @dsize:
             type:    numpy.uint64
@@ -201,7 +199,7 @@ class HMM(object):
             # Cumulative distribution of the states
             accdist = np.add.accumulate(self.sd)
             rlen = np.random.randint(3, sqlen)
-            sq = np.zeros(rlen, dtype = np.uint64)
+            sq = np.zeros(rlen, dtype=np.uint64)
             # Initial state chosen based on the statioinary distribution
             state = (np.where(accdist >= np.random.rand())[0])[0]
             for j in xrange(rlen):
@@ -246,102 +244,6 @@ class HMM(object):
             self.cO = np.load(f)
             self.sd = np.load(f)
             
-            
-# OOM learner has been proved to produce negative probability, and more,
-# the matrix V is not invertible in the context of choosing each observation
-# as the characteristic event
-#class oom_operator(object):
-#    '''
-#    Build True OOM Operator learner based on the given HMM model
-#    '''
-#    def __init__(self, hmm):
-#        '''
-#        Check two ways of computing observation probability:
-#        1    Pr = 1*tao*pi
-#        2    Pr = winf*taoprime*w0
-#        '''
-#        self.m = hmm.m
-#        self.n = hmm.n
-#        self.pi = hmm.sd
-##        tao_a = T*diag(O_a)
-#        self.tao = [np.zeros((self.n, self.n), dtype=np.float) for i in xrange(self.n)]
-#        for i in xrange(self.n):
-#            self.tao[i] = hmm.T * hmm.O[i,:]
-#
-#        self.w0 = np.dot(hmm.O, hmm.sd)
-##        V = O*T*diag(pi)*O'
-#        self.V = np.dot(hmm.O, hmm.T) * hmm.sd
-#        self.V = np.dot(self.V, hmm.O.T)
-#        self.V_inverse = np.linalg.inv(self.V)
-##        print 'Rank of V:', np.linalg.matrix_rank(self.V)
-##        Wa = O*Tao_a*T*diag(pi)*O'
-#        self.W = [np.zeros((self.n, self.n), dtype=np.float) for i in xrange(self.n)]
-#        for i in xrange(self.n):
-#            self.W[i] = np.dot(hmm.O, self.tao[i])
-#            self.W[i] = np.dot(self.W[i], hmm.T) * hmm.sd
-#            self.W[i] = np.dot(self.W[i], hmm.O.T)
-#        self.taoprime = [np.zeros((self.n, self.n), dtype=np.float) for i in xrange(self.n)]
-#        for i in xrange(self.n):
-#            self.taoprime[i] = np.dot(self.W[i], self.V_inverse)
-#            self.taoprime[i][np.abs(self.taoprime[i]) < 1e-16] = 0.0
-##        self.winf = np.dot(self.w0.T, self.V_inverse)
-##        just another trial, it should be right now
-#        self.winf = np.dot(np.ones(self.m), np.linalg.pinv(hmm.O))
-#        
-#    def print_out(self, hmm):
-#        '''
-#        Print out parameters of current oom_operator
-#        '''
-#        print 'Parameters in Hidden Markov Model'
-#        print 'Transition matrix:'
-#        print hmm.T
-#        print '-' * 50
-#        print 'Emission matrix:'
-#        print hmm.O
-#        print '-' * 50
-#        print 'Initial distribution:'
-#        print hmm.sd
-#        print '=' * 50
-#        
-#        print 'Parameters in Observable Operator Model'
-#        print 'V matrix:'
-#        print self.V
-#        print '-' * 50
-#        print 'V inverse matrix:'
-#        print self.V_inverse
-#        print '-' * 50
-#        print 'V*V^-1 matrix:'
-#        print np.dot(self.V, self.V_inverse)
-#        print '-' * 50
-#        print 'V^-1*V matrix:'
-#        print np.dot(self.V_inverse, self.V)
-#        print '=' * 50
-#        print 'Tao_a = T*diag(O_a) matrix:'
-#        for matrix in self.tao:
-#            print matrix
-#            print '-' * 50
-#        print '=' * 50
-#        print 'W_a = OTao_a Tdiag(pi)*O^T'
-#        for matrix in self.W:
-#            print matrix
-#            print '-' * 50
-#        print '=' * 50
-#    
-#    def prob_forward(self, seq):
-#        prob = self.pi
-#        for ob in seq:
-#            prob = np.dot(self.tao[ob], prob)
-#        prob = np.dot(np.ones(self.m), prob)
-#        return prob
-#
-#    
-#    def prob_operator(self, seq):
-#        prob = self.w0
-#        for ob in seq:
-#            prob = np.dot(self.taoprime[ob], prob)
-#        prob = np.dot(self.winf, prob)
-#        return prob
-    
 
 class spectral_learner(object):
     '''
@@ -358,7 +260,7 @@ class spectral_learner(object):
         self.pi = hmm.sd
         self.tao = [np.zeros((self.n, self.n), dtype=np.float) for i in xrange(self.n)]
         for i in xrange(self.n):
-            self.tao[i] = hmm.T * hmm.O[i,:]
+            self.tao[i] = hmm.T * hmm.O[i, :]
 
 #        Begining of spectral learning
 #        V = O*T*diag(pi)*O^T
@@ -406,7 +308,7 @@ def main(modelpath, trainset):
     hmm = HMM(filename=modelpath)
     operator = spectral_learner(hmm)
     t_end = time.time()
-    print 'Time used to train spectral learner:', t_end-t_start
+    print 'Time used to train spectral learner:', t_end - t_start
     operator.print_out(hmm)
     with file(trainset, 'r') as f:
         reader = csv.reader(f)
