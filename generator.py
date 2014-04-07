@@ -13,7 +13,7 @@ import numpy as np
 from hmm import HMM
 
 if __name__ == '__main__':    
-    usage = '''./generator.py file m n training_dsize testing_dsize [sqlen = 100]
+    usage = '''./generator.py file m n training_seq_length testing_seq_length
             file is the filepath to store the data 
             m is the size of states in HMM    
             n is the size of observations in HMM  
@@ -31,26 +31,15 @@ if __name__ == '__main__':
     model = HMM(int(sys.argv[2]), int(sys.argv[3]))
 
     # Generate training set and testing set
-    if len(sys.argv) == 7:
-        training_data = model.gendata(int(sys.argv[4]), int(sys.argv[6]))
-        testing_data = model.gendata(int(sys.argv[5]), int(sys.argv[6]))
-    else:
-        training_data = model.gendata(int(sys.argv[4]), 100)
-        testing_data = model.gendata(int(sys.argv[5]), 100)
+    training_seq = model.generate_train_data(int(sys.argv[4]))
+    test_seqs = model.generate_test_data(int(sys.argv[5]))
 
     training_filename = "train_" + sys.argv[1] + ".data"
     test_filename = "test_" + sys.argv[1] + ".data"
     model_filename = "model_" + sys.argv[1] + ".npy"
-    # Writing to files
-    with file(training_filename, 'w') as f:
-        writer = csv.writer(f)
-        for sq in training_data:
-            writer.writerow(sq)
     
-    with file(test_filename, 'w') as f:
-        writer = csv.writer(f)
-        for sq in testing_data:
-            writer.writerow(sq)
+    np.savetxt(training_filename, [training_seq], delimiter=",", fmt="%d")
+    np.savetxt(test_filename, test_seqs, delimiter=",", fmt="%d")
     
     t_end = time.clock()
     print 'Time used:', (t_end - t_start), 'seconds'

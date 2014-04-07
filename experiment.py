@@ -8,10 +8,9 @@
 import sys
 import csv
 import time
-import math
-
 import numpy as np
 
+from pprint import pprint
 from hmm import HMM
 from learner import SpectralLearner
 
@@ -62,7 +61,7 @@ class Experimenter(object):
         '''
         t_start = time.time()
         self._sl_learner = SpectralLearner()
-        self._sl_learner.train(self.training_data, 1, self._model.n)
+        self._sl_learner.train(self.training_data, 7, self._model.n)
         t_end = time.time()
         print 'Time used for Spectral learner and OOM learner:', (t_end - t_start)
 
@@ -84,10 +83,9 @@ class Experimenter(object):
             out.write('Model probability\tSpectral learning probability\n')
             for idx, record in enumerate(records):
                 line = '%e\t%e\t%s\n' %(record[0], record[1], self.testing_data[idx])
-                out.write(line)
-        
-        out.write("-" * 50)
-        out.write("Variation dist: %f" % variation_dist)
+                out.write(line)        
+            out.write("-" * 50)
+        pprint("Variation dist: %f" % variation_dist)
     
     
 def main(trainfile, testfile, modelpath):

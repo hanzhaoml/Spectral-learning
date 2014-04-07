@@ -50,23 +50,17 @@ class HMM(object):
             type:    numpy.array
             param:   The stationary distribution of HMM
         '''
-        if filename is not None:
-            self.loadModel(filename)
-        else:            
-            self.m = m
-            self.n = n
-            self.T = self._randomT(m)
-            self.O = self._randomO(m, n)
-            (self.cT, self.cO) = self._build()
-            self.sd = self._converge()
         
-    @property
-    def m(self):
-        return self.m
-    
-    @property
-    def n(self):
-        return self.n
+        pprint("In the initialize method of HMM:")
+        pprint("M: %d" % m)
+        pprint("N: %d" % n)
+        
+        self.m = m
+        self.n = n
+        self.T = self._randomT(m)
+        self.O = self._randomO(m, n)
+        (self.cT, self.cO) = self._build()
+        self.sd = self._converge()
     
     def _randomT(self, m):
         '''
@@ -219,7 +213,39 @@ class HMM(object):
                 sq[j] = observ
             data.append(sq)        
         return data
-            
+    
+    def generate_test_data(self, seq_length):
+        test_seqs = np.zeros((self.n ** seq_length, seq_length), dtype=np.int)
+        return self.cartesian(seq_length, test_seqs)
+    
+    def generate_train_data(self, seq_length):
+        train_seq = np.zeros(seq_length, dtype=np.int)
+        acc_stationary_dist = np.add.accumulate(self.sd)
+        # Initial state chosen based on the statioinary distribution
+        state = (np.where(acc_stationary_dist >= np.random.rand())[0])[0]        
+        for j in xrange(seq_length):
+            # randomly choose an observation by the Observation matrix[state]
+            observ = (np.where(self.cO[:, state] >= np.random.rand())[0])[0]
+            # update the state of HMM by the Transition matrix[state]
+            state = (np.where(self.cT[:, state] >= np.random.rand())[0])[0]
+            train_seq[j] = observ
+        return train_seq
+    
+    def cartesian(self, seq_length, out):
+        '''
+        @seq_length: int. Length of the observation sequence.
+        @out: ndarray. All possible combinations of observation sequence of length
+                        @seq_length
+        '''
+        dsize = self.n ** seq_length
+        chunks = dsize / self.n
+        out[:, 0] = np.repeat(np.arange(self.n), chunks)
+        if seq_length > 1:
+            self.cartesian(seq_length-1, out[0:chunks, 1:])
+            for j in xrange(1, self.n):
+                out[j*chunks: (j+1)*chunks, 1:] = out[0:chunks, 1:]
+        return out
+    
     @staticmethod
     def to_file(filename, model):
         with file(filename, "wb") as fout:
