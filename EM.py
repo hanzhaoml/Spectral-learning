@@ -113,7 +113,7 @@ class BaumWelch(object):
                 break
             self.T = sigma
             self.O = gamma
-        
+
 
 def main():
     pass

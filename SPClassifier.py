@@ -10,7 +10,6 @@ import numpy as np
 import csv
 import time
 import sys
-import matplotlib.pyplot as plt
 from hmm import HMM
 from learner import SpectralLearner
 from EM import BaumWelch
@@ -32,8 +31,6 @@ class SPClassifier(object):
         self.trainSet = data[:trsize]
         self.testSet = self._loadData(testfile)
         self.sl_learner = SpectralLearner()
-#        self.oom_learner = OOMLearner()
-#        self.emlearner = BaumWelch(4, 4)
         
     def _loadData(self, filename):
         '''
@@ -63,8 +60,7 @@ class SPClassifier(object):
         self.sl_learner.train(self.trainSet)
         t_end = time.time()
         print 'Time used for Spectral learner and OOM learner:', (t_end - t_start)
-        
-    
+          
     def KLDiv(self, tprob, sprob):
         '''
         @tprob:
@@ -78,35 +74,12 @@ class SPClassifier(object):
         tprob = np.array(tprob, dtype=np.float)
         sprob = np.array(sprob, dtype=np.float)
         return np.sum(tprob * np.log(tprob / sprob))
-        
-    def draw(self, tprob, sprob, eprob):
-        '''
-        @tprob:
-            type:    list()
-            param:   True probability distribution
             
-        @sprob:    
-            type:    list()
-            param:   Simulated probability distribution 
-        '''
-        coor = range(len(tprob))
-        plt.plot(coor, tprob, label='True distribution', color='blue', linewidth=2)
-        plt.plot(coor, sprob, label='Spectral learning distribution', color='red', linewidth=2)
-        plt.plot(coor, eprob, laebl='EM-algorithm distribution', color='green', linewidth=2)
-        plt.xlabel('Observation sequence')
-        plt.ylabel('Probability')
-        plt.title('Probability distribution of P[X1, X2, X3, X4]')
-        plt.xlim(1, len(tprob))
-        plt.legend()
-        plt.show()
-        
-    
     def testing(self, outfile):
         records = list()
         for seq in self.testSet:
             model_prob = self.model.probability(seq)
             sl_prob = self.sl_learner.predict(seq)
-#            oom_prob = self.oom_learner.predict(seq)
             records.append((model_prob, sl_prob))
     
         with file(outfile, 'w') as out:

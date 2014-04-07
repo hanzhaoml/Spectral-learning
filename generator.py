@@ -5,15 +5,14 @@
 # Copyright (C) 2013 KeiraZhao <zhaohan2009011312@gmail.com>
 #
 # Distributed under terms of the Tsinghua University license.
-from hmm import HMM
-
 import sys
 import csv
 import time
+import numpy as np
 
+from hmm import HMM
 
-if __name__ == '__main__':
-    
+if __name__ == '__main__':    
     usage = '''./generator.py file m n training_dsize testing_dsize [sqlen = 100]
             file is the filepath to store the data 
             m is the size of states in HMM    
@@ -39,13 +38,16 @@ if __name__ == '__main__':
         training_data = model.gendata(int(sys.argv[4]), 100)
         testing_data = model.gendata(int(sys.argv[5]), 100)
 
+    training_filename = "train_" + sys.argv[1] + ".data"
+    test_filename = "test_" + sys.argv[1] + ".data"
+    model_filename = "model_" + sys.argv[1] + ".npy"
     # Writing to files
-    with file(sys.argv[1], 'w') as f:
+    with file(training_filename, 'w') as f:
         writer = csv.writer(f)
         for sq in training_data:
             writer.writerow(sq)
     
-    with file('test_' + sys.argv[1], 'w') as f:
+    with file(test_filename, 'w') as f:
         writer = csv.writer(f)
         for sq in testing_data:
             writer.writerow(sq)
@@ -54,6 +56,4 @@ if __name__ == '__main__':
     print 'Time used:', (t_end - t_start), 'seconds'
     
     # Save model parameters
-    model.saveModel('model.npy')
-    
-    
+    HMM.to_file(model_filename, model)

@@ -9,6 +9,7 @@ import numpy as np
 import sys
 import time
 import csv
+import cPickle
 
 from pprint import pprint
 
@@ -59,6 +60,14 @@ class HMM(object):
             (self.cT, self.cO) = self._build()
             self.sd = self._converge()
         
+    @property
+    def m(self):
+        return self.m
+    
+    @property
+    def n(self):
+        return self.n
+    
     def _randomT(self, m):
         '''
         @m:
@@ -195,7 +204,6 @@ class HMM(object):
             param:   The generated observation sequence of HMM based on Monte Carlo simulation.
         '''
         data = list()
-        
         for i in xrange(dsize):
             # Cumulative distribution of the states
             accdist = np.add.accumulate(self.sd)
@@ -209,42 +217,27 @@ class HMM(object):
                 # randomly choose an observation by the Observation matrix[state]
                 observ = (np.where(self.cO[:, state] >= np.random.rand())[0])[0]
                 sq[j] = observ
-            data.append(sq)
-        
+            data.append(sq)        
         return data
             
+    @staticmethod
+    def to_file(filename, model):
+        with file(filename, "wb") as fout:
+            try:
+                cPickle.dump(model, fout)
+                return True
+            except Exception:
+                return False
     
-    def saveModel(self, filename):
-        '''
-        @filename:
-            type:    string
-            param:   file used to save the model parameters
-        '''
-        with file(filename, 'wb') as f:
-            np.save(f, self.m)
-            np.save(f, self.n)
-            np.save(f, self.T)
-            np.save(f, self.O)
-            np.save(f, self.cT)
-            np.save(f, self.cO)
-            np.save(f, self.sd)
-            
-    
-    def loadModel(self, filename):
-        '''
-        @filename:
-            type:    string
-            param:   file used to load the model parameters
-        '''
-        with file(filename, 'rb') as f:
-            self.m = np.load(f)
-            self.n = np.load(f)
-            self.T = np.load(f)
-            self.O = np.load(f)
-            self.cT = np.load(f)
-            self.cO = np.load(f)
-            self.sd = np.load(f)
-            
+    @staticmethod
+    def from_file(filename):
+        with file(filename, "rb") as fin:
+            try:
+                model = cPickle.load(fin)
+                return model
+            except Exception:
+                raise
+
 
 class spectral_learner(object):
     '''

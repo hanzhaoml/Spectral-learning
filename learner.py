@@ -102,15 +102,15 @@ def main(modelpath, trainfile, testfile, m, n):
         reader = csv.reader(fin)
         testing_data = [map(int, row) for row in reader]
     sp_learner = SpectralLearner()
-    sp_learner.train(training_data, m)    
+    sp_learner.train(training_data, m, n)    
     hmm = HMM(filename=modelpath)
-    print 'Observation probability for sequence in training data set'
+    pprint('Observation probability for sequence in training data set')
     print '*' * 50
     for seq in training_data:
         print hmm.probability(seq), '\t', sp_learner.predict(seq), '\t', seq
-    print '=' * 50
-    print 'Observation probability for sequence in testing data set'
-    print '*' * 50
+    pprint('=' * 50)
+    pprint('Observation probability for sequence in testing data set')
+    pprint('*' * 50)
     for seq in testing_data:
         print hmm.probability(seq), '\t', sp_learner.predict(seq), '\t', seq
 
