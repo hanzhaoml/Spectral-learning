@@ -176,7 +176,6 @@ def main(modelpath, trainfile, testfile):
     
     
 if __name__ == '__main__':
-    
     usage = './SPClassifier modelpath trainset testset'
     if len(sys.argv) < 4:
         print usage

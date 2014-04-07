@@ -380,7 +380,6 @@ class spectral_learner(object):
             self.W[i] = np.dot(self.factor, self.tao[i])
             self.W[i] = np.dot(self.W[i], self.factor_inverse)
         
-
     def prob_forward(self, seq):
         prob = self.pi
         for ob in seq:
