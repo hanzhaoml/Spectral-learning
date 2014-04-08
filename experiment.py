@@ -87,11 +87,9 @@ class Experimenter(object):
         sl_variation_measure = np.sum(sl_variation_dist)
         em_variation_measure = np.min(np.sum(em_variation_dist, axis=1))
         return (sl_time, em_time, sl_variation_measure, em_variation_measure)
-#         with file(log_filename, "wb") as fout:
-#             fout.write("%d,%f,%f,%f,%f" % (num_train_inst, sl_time, em_time, sl_variation_measure, em_variation_measure))
     
     
-def main(trainfile, testfile, modelpath, model_parameter, log_filename):
+def compare_with_em(trainfile, testfile, modelpath, model_parameter, log_filename):
     experimenter = Experimenter(trainfile, testfile, modelpath, model_parameter)
     num_train_insts = 1000 * np.arange(1, 11)
     statistics = np.zeros((10, 5), dtype=np.float)
@@ -99,7 +97,29 @@ def main(trainfile, testfile, modelpath, model_parameter, log_filename):
         statistics[i, 0] = num_train_inst
         statistics[i, 1:] = experimenter.run_experiment(num_train_inst, 'experiment.log')
     np.savetxt(log_filename, statistics, delimiter=",", fmt="%.4f")
-        
+    
+def model_selection(trainfile, testfile, modelpath, log_filename):
+    training_data = np.loadtxt(trainfile, dtype=np.int, delimiter=",")
+    test_data = np.loadtxt(testfile, dtype=np.int, delimiter=",")
+    model = HMM.from_file(modelpath)
+    variation_measure = np.zeros(10, dtype=np.float)
+    neg_num_measure = np.zeros(10, dtype=np.int)
+    neg_proportion_measure = np.zeros(10, dtype=np.float)
+    for m in range(1, 10):
+        slearner = SpectralLearner()
+        slearner.train(training_data, m, model.n)
+        true_probs = np.zeros(test_data.shape[0])
+        sl_probs = np.zeros(test_data.shape[0])
+        for i, seq in enumerate(test_data):
+            true_probs[i] = model.probability(seq)
+            sl_probs[i] = slearner.predict(seq)
+        neg_num_measure[m] = np.sum(sl_probs < 0)
+        neg_proportion_measure[m] = neg_num_measure[m] / test_data.shape[0]
+        variation_measure[m] = np.sum(np.abs(sl_probs-true_probs))
+    statistics = np.array([variation_measure, neg_num_measure, neg_proportion_measure])
+    statistics = statistics.T
+    np.savetxt(log_filename, statistics, delimiter=",", fmt="%.4f")
+    
     
 if __name__ == '__main__':
     usage = '''
@@ -109,5 +129,5 @@ if __name__ == '__main__':
     if len(sys.argv) < 5:
         print usage
         exit()
-    main(sys.argv[1], sys.argv[2], sys.argv[3], int(sys.argv[4]), sys.argv[5])
-    
+#     main(sys.argv[1], sys.argv[2], sys.argv[3], int(sys.argv[4]), sys.argv[5])
+    model_selection(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
