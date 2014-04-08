@@ -7,6 +7,7 @@
 # Distributed under terms of the Tsinghua University license.
 import sys
 import time
+import csv
 import numpy as np
 
 from pprint import pprint
@@ -21,7 +22,12 @@ class Experimenter(object):
     '''
     def __init__(self, training_filename, test_filename, model_filename, model_parameter):
         self._training_data = np.loadtxt(training_filename, dtype=np.int, delimiter=",")
-        self._test_data = np.loadtxt(test_filename, dtype=np.int, delimiter=",")
+        #self._test_data = np.loadtxt(test_filename, dtype=np.int, delimiter=",")
+        self._test_data = []
+        with file(test_filename, "rb") as fin:
+            reader = csv.reader(fin)
+            for line in reader:
+                self._test_data.append(np.asarray(map(int, line)))
         self._model = HMM.from_file(model_filename)
         self._parameter = model_parameter
         
@@ -56,9 +62,9 @@ class Experimenter(object):
         '''
         pprint("Length of training data: %d" % self._training_data.shape[0])
         sl_time, em_time = self._train(num_train_inst)
-        true_probs = np.zeros(self._test_data.shape[0], dtype=np.float)
-        sl_probs = np.zeros(self._test_data.shape[0], dtype=np.float)
-        em_probs = np.zeros((20, self._test_data.shape[0]), dtype=np.float)
+        true_probs = np.zeros(len(self._test_data), dtype=np.float)
+        sl_probs = np.zeros(len(self._test_data), dtype=np.float)
+        em_probs = np.zeros((20, len(self._test_data)), dtype=np.float)
         for i, seq in enumerate(self._test_data):
             true_probs[i] = self._model.probability(seq)
             sl_probs[i] = self._sl_learner.predict(seq)
@@ -72,18 +78,18 @@ class Experimenter(object):
         neg_percentage = np.sum(sl_probs < 0, dtype=np.float) / sl_probs.shape[0]
         num_neg_probs = np.sum(sl_probs < 0)
 #         with file(log_filename, "wb") as fout:
-        pprint('The value of m used in spectral learning algorithm: %d\n' % self._parameter)
-        pprint('Truth\tSL\t EM\t OEM\n')
-        for i in xrange(self._test_data.shape[0]):
-            line = '%e\t%e\t%e\t%s\n' % (true_probs[i], sl_probs[i], em_probs[i], self._test_data[i, :])
-            pprint(line)        
-        pprint("-" * 50 + "\n")
-        line = "%f\t%f\t%f\n" % (np.sum(true_probs), np.sum(sl_probs), np.sum(em_probs))
-        pprint(line)
-        pprint("Percentage of negative probabilities: %f" % neg_percentage)
-        pprint("Number of negative probabilies: %d" % num_neg_probs)
-        pprint("Variation distance for Spectral Learning: %f" % np.sum(sl_variation_dist))
-        pprint("Variation distance for Expectation Maximization: %f" % np.min(np.sum(em_variation_dist, axis=1)))        
+        #pprint('The value of m used in spectral learning algorithm: %d\n' % self._parameter)
+        #pprint('Truth\tSL\t EM\t OEM\n')
+        #for i in xrange(len(self._test_data)):
+            #line = '%e\t%e\t%e\n' % (true_probs[i], sl_probs[i], em_probs[i])
+            #pprint(line)        
+        #pprint("-" * 50 + "\n")
+        #line = "%f\t%f\t%f\n" % (np.sum(true_probs), np.sum(sl_probs), np.sum(em_probs))
+        #pprint(line)
+        #pprint("Percentage of negative probabilities: %f" % neg_percentage)
+        #pprint("Number of negative probabilies: %d" % num_neg_probs)
+        #pprint("Variation distance for Spectral Learning: %f" % np.sum(sl_variation_dist))
+        #pprint("Variation distance for Expectation Maximization: %f" % np.min(np.sum(em_variation_dist, axis=1)))        
         sl_variation_measure = np.sum(sl_variation_dist)
         em_variation_measure = np.min(np.sum(em_variation_dist, axis=1))
         return (sl_time, em_time, sl_variation_measure, em_variation_measure)
