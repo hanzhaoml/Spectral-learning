@@ -106,16 +106,20 @@ def compare_with_em(trainfile, testfile, modelpath, model_parameter, log_filenam
     
 def model_selection(trainfile, testfile, modelpath, log_filename):
     training_data = np.loadtxt(trainfile, dtype=np.int, delimiter=",")
-    test_data = np.loadtxt(testfile, dtype=np.int, delimiter=",")
+    test_data = []
+    with file(testfile, "rb") as fin:
+        reader = csv.reader(fin)
+        for line in reader:
+            test_data.append(np.asarray(map(int, line)))
     model = HMM.from_file(modelpath)
     variation_measure = np.zeros(10, dtype=np.float)
     neg_num_measure = np.zeros(10, dtype=np.int)
     neg_proportion_measure = np.zeros(10, dtype=np.float)
-    for m in range(1, 11):
+    for m in range(1, 9):
         slearner = SpectralLearner()
         slearner.train(training_data, m, model.n)
-        true_probs = np.zeros(test_data.shape[0])
-        sl_probs = np.zeros(test_data.shape[0])
+        true_probs = np.zeros(len(test_data))
+        sl_probs = np.zeros(len(test_data))
         for i, seq in enumerate(test_data):
             true_probs[i] = model.probability(seq)
             sl_probs[i] = slearner.predict(seq)
@@ -123,7 +127,7 @@ def model_selection(trainfile, testfile, modelpath, log_filename):
 #         pprint("-" * 50)
 #         pprint("%f\t%f" % (np.sum(true_probs), np.sum(sl_probs)))
         neg_num_measure[m-1] = np.sum(sl_probs < 0, dtype=np.float)
-        neg_proportion_measure[m-1] = neg_num_measure[m-1] / float(test_data.shape[0])
+        neg_proportion_measure[m-1] = neg_num_measure[m-1] / float(len(test_data))
         variation_measure[m-1] = np.sum(np.abs(sl_probs-true_probs))
 #         pprint("Variation distance: %f" % variation_measure[m-1])
 #         pprint("Number of negative probabilities: %d" % neg_num_measure[m-1])
@@ -139,8 +143,8 @@ if __name__ == '__main__':
     ./experiment.py train_data test_data model_path model_parameter 
     log_filename
     '''
-    if len(sys.argv) < 6:
+    if len(sys.argv) < 5:
         print usage
         exit()
-    compare_with_em(sys.argv[1], sys.argv[2], sys.argv[3], int(sys.argv[4]), sys.argv[5])
-#     model_selection(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
+    #compare_with_em(sys.argv[1], sys.argv[2], sys.argv[3], int(sys.argv[4]), sys.argv[5])
+    model_selection(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
