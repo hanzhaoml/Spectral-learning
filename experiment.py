@@ -105,7 +105,7 @@ def model_selection(trainfile, testfile, modelpath, log_filename):
     variation_measure = np.zeros(10, dtype=np.float)
     neg_num_measure = np.zeros(10, dtype=np.int)
     neg_proportion_measure = np.zeros(10, dtype=np.float)
-    for m in range(1, 10):
+    for m in range(1, 11):
         slearner = SpectralLearner()
         slearner.train(training_data, m, model.n)
         true_probs = np.zeros(test_data.shape[0])
