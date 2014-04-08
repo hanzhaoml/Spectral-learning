@@ -33,14 +33,18 @@ if __name__ == '__main__':
     # Generate training set and testing set
     training_seq = model.generate_train_data(int(sys.argv[4]))
 #     test_seqs = model.generate_test_data(int(sys.argv[5]))
-    test_seqs = np.array(model.gendata(int(sys.argv[5]), 100), dtype=np.int)
+    test_seqs = model.gendata(int(sys.argv[5]), 20)
     
     training_filename = "train_" + sys.argv[1] + ".data"
     test_filename = "test_" + sys.argv[1] + ".data"
     model_filename = "model_" + sys.argv[1] + ".npy"
     
     np.savetxt(training_filename, [training_seq], delimiter=",", fmt="%d")
-    np.savetxt(test_filename, test_seqs, delimiter=",", fmt="%d")
+#     np.savetxt(test_filename, test_seqs, delimiter=",", fmt="%d")
+    with file(test_filename, "wb") as fout:
+        writer = csv.writer(fout)
+        for seq in test_seqs:
+            writer.writerow(seq)
     
     t_end = time.clock()
     print 'Time used:', (t_end - t_start), 'seconds'
