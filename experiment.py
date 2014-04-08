@@ -133,8 +133,8 @@ if __name__ == '__main__':
     ./experiment.py train_data test_data model_path model_parameter 
     log_filename
     '''
-    if len(sys.argv) < 5:
+    if len(sys.argv) < 6:
         print usage
         exit()
-#     main(sys.argv[1], sys.argv[2], sys.argv[3], int(sys.argv[4]), sys.argv[5])
-    model_selection(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
+    compare_with_em(sys.argv[1], sys.argv[2], sys.argv[3], int(sys.argv[4]), sys.argv[5])
+#     model_selection(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
