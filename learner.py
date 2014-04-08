@@ -21,9 +21,9 @@ class SpectralLearner(object):
     def __init__(self):
         pass
     
-    def train(self, trilst, m, n):
+    def train(self, seq, m, n):
         '''
-        @trilst:    list[], list of observation sequences
+        @seq:    list[], list of observation sequences
         Frequency based estimation of P_1, P_21 and P_3x1, where x = 1, 2, ... n, n is the
         size of observation states.
         '''
@@ -34,8 +34,7 @@ class SpectralLearner(object):
         self.P_21 = np.zeros((self.n, self.n), dtype=np.float)
         self.P_3x1 = [np.zeros((self.n, self.n), dtype=np.float) for i in xrange(self.n)]
 #        Training triples
-        print 'Number of input sequences:', len(trilst)
-        trilst = [sublst[idx: idx+3] for sublst in trilst for idx in xrange(len(sublst)-2)]
+        trilst = np.array([seq[idx: idx+3] for idx in xrange(seq.shape[0]-2)])
         print 'Number of separated triples:', len(trilst)
         print 'Estimate P_1, P_21 and P_3x1...'
         # Parameter estimation
