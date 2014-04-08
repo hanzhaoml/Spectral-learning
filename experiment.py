@@ -72,14 +72,14 @@ class Experimenter(object):
         neg_percentage = np.sum(sl_probs < 0, dtype=np.float) / sl_probs.shape[0]
         num_neg_probs = np.sum(sl_probs < 0)
 #         with file(log_filename, "wb") as fout:
-#             fout.write('The value of m used in spectral learning algorithm: %d\n' % self._parameter)
-#             fout.write('Truth\tSL\t EM\t OEM\n')
-#             for i in xrange(self._test_data.shape[0]):
-#                 line = '%e\t%e\t%e\t%s\n' % (true_probs[i], sl_probs[i], em_probs[i], self._test_data[i, :])
-#                 fout.write(line)        
-#             fout.write("-" * 50 + "\n")
-#             line = "%f\t%f\t%f\n" % (np.sum(true_probs), np.sum(sl_probs), np.sum(em_probs))
-#             fout.write(line)
+        pprint('The value of m used in spectral learning algorithm: %d\n' % self._parameter)
+        pprint('Truth\tSL\t EM\t OEM\n')
+        for i in xrange(self._test_data.shape[0]):
+            line = '%e\t%e\t%e\t%s\n' % (true_probs[i], sl_probs[i], em_probs[i], self._test_data[i, :])
+            pprint(line)        
+        pprint("-" * 50 + "\n")
+        line = "%f\t%f\t%f\n" % (np.sum(true_probs), np.sum(sl_probs), np.sum(em_probs))
+        pprint(line)
         pprint("Percentage of negative probabilities: %f" % neg_percentage)
         pprint("Number of negative probabilies: %d" % num_neg_probs)
         pprint("Variation distance for Spectral Learning: %f" % np.sum(sl_variation_dist))
@@ -113,9 +113,16 @@ def model_selection(trainfile, testfile, modelpath, log_filename):
         for i, seq in enumerate(test_data):
             true_probs[i] = model.probability(seq)
             sl_probs[i] = slearner.predict(seq)
-        neg_num_measure[m] = np.sum(sl_probs < 0)
+            pprint("%f\t%f" % (true_probs[i], sl_probs[i]))
+        pprint("-" * 50)
+        pprint("%f\t%f" % (np.sum(true_probs), np.sum(sl_probs)))
+        neg_num_measure[m] = np.sum(sl_probs < 0, dtype=np.float)
         neg_proportion_measure[m] = neg_num_measure[m] / test_data.shape[0]
         variation_measure[m] = np.sum(np.abs(sl_probs-true_probs))
+        pprint("Variation distance: %f" % variation_measure[m])
+        pprint("Number of negative probabilities: %d" % neg_num_measure[m])
+        pprint("Percentage of negative probabilities: %f" % neg_proportion_measure[m])
+        pprint("*" * 50)
     statistics = np.array([variation_measure, neg_num_measure, neg_proportion_measure])
     statistics = statistics.T
     np.savetxt(log_filename, statistics, delimiter=",", fmt="%.4f")
