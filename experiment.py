@@ -91,22 +91,23 @@ class Experimenter(object):
 #             fout.write("%d,%f,%f,%f,%f" % (num_train_inst, sl_time, em_time, sl_variation_measure, em_variation_measure))
     
     
-def main(trainfile, testfile, modelpath, model_parameter):
+def main(trainfile, testfile, modelpath, model_parameter, log_filename):
     experimenter = Experimenter(trainfile, testfile, modelpath, model_parameter)
     num_train_insts = 1000 * np.arange(1, 11)
     statistics = np.zeros((10, 5), dtype=np.float)
     for i, num_train_inst in enumerate(num_train_insts):
         statistics[i, 0] = num_train_inst
         statistics[i, 1:] = experimenter.run_experiment(num_train_inst, 'experiment.log')
-    np.savetxt("m4n8_L4_m_1.txt", statistics, delimiter=",", fmt="%.4f")
+    np.savetxt(log_filename, statistics, delimiter=",", fmt="%.4f")
         
     
 if __name__ == '__main__':
     usage = '''
-    ./experiment.py train_data test_data model_path model_parameter
+    ./experiment.py train_data test_data model_path model_parameter 
+    log_filename
     '''
     if len(sys.argv) < 5:
         print usage
         exit()
-    main(sys.argv[1], sys.argv[2], sys.argv[3], int(sys.argv[4]))
+    main(sys.argv[1], sys.argv[2], sys.argv[3], int(sys.argv[4]), sys.argv[5])
     
