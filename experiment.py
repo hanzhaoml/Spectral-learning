@@ -86,16 +86,19 @@ class Experimenter(object):
         pprint("Variation distance for Expectation Maximization: %f" % np.min(np.sum(em_variation_dist, axis=1)))        
         sl_variation_measure = np.sum(sl_variation_dist)
         em_variation_measure = np.min(np.sum(em_variation_dist, axis=1))
-        with file(log_filename, "wb") as fout:
-            fout.write("%d,%f,%f,%f,%f" % (num_train_inst, sl_time, em_time, sl_variation_measure, em_variation_measure))
+        return (sl_time, em_time, sl_variation_measure, em_variation_measure)
+#         with file(log_filename, "wb") as fout:
+#             fout.write("%d,%f,%f,%f,%f" % (num_train_inst, sl_time, em_time, sl_variation_measure, em_variation_measure))
     
     
 def main(trainfile, testfile, modelpath, model_parameter):
     experimenter = Experimenter(trainfile, testfile, modelpath, model_parameter)
     num_train_insts = 1000 * np.arange(1, 11)
-    for num_train_inst in num_train_insts:
-        experimenter.run_experiment(num_train_inst, 'experiment.log')
-        pprint("-" * 50)
+    statistics = np.zeros(10, 5)
+    for i, num_train_inst in enumerate(num_train_insts):
+        statistics[i, 0] = num_train_inst
+        statistics[i, 1:] = experimenter.run_experiment(num_train_inst, 'experiment.log')
+    np.savetxt("m4n8_L4_m_1.txt", statistics, delimiter=",")
         
     
 if __name__ == '__main__':
