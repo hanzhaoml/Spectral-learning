@@ -58,7 +58,7 @@ if __name__ == '__main__':
 #         sys.stderr.write(usage)
 #         exit()
     if len(sys.argv) < 4:
-        sys.stderr("Need more parameters")
+        sys.stderr.write("Need more parameters")
         exit()
     hmm = HMM.from_file(sys.argv[1])
     regenerate(hmm, sys.argv[2], int(sys.argv[3]))
