@@ -33,7 +33,7 @@ if __name__ == '__main__':
     # Generate training set and testing set
     training_seq = model.generate_train_data(int(sys.argv[4]))
 #     test_seqs = model.generate_test_data(int(sys.argv[5]))
-    test_seqs = model.gendata(int(sys.argv[5]), 20)
+    test_seqs = model.gendata(int(sys.argv[5]), 50)
     
     training_filename = "train_" + sys.argv[1] + ".data"
     test_filename = "test_" + sys.argv[1] + ".data"
