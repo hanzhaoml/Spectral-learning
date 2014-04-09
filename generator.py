@@ -19,13 +19,13 @@ def generate(m, n, dsizes, tsize, file_tager):
     # n --- The number of observation states
     model = HMM(m, n)
     # Generate training set
-    for dsize in dsize:
+    for dsize in dsizes:
         training_seq = model.generate_train_data(dsize)
-        training_filename = "train_" + file_tager + ("%d.data" % dsize)
+        training_filename = "train_" + file_tager + ("_%d.data" % dsize)
         np.savetxt(training_filename, [training_seq], delimiter=",", fmt="%d")
     # Generate test set
-    test_seqs_F = model.generate_test_data(tsize, min_seq_len=4, max_seq_length=5)
-    test_seqs_V = model.generate_test_data(tsize, min_seq_len=3, max_seq_length=50)
+    test_seqs_F = model.generate_test_data(tsize, min_seq_len=4, max_seq_len=5)
+    test_seqs_V = model.generate_test_data(tsize, min_seq_len=3, max_seq_len=50)
 
     test_seqs_F_filename = "test_" + file_tager + "_F.data"
     test_seqs_V_filename = "test_" + file_tager + "_V.data"
