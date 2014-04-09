@@ -112,39 +112,42 @@ def model_selection(trainfile, testfile, modelpath, log_filename):
         for line in reader:
             test_data.append(np.asarray(map(int, line)))
     model = HMM.from_file(modelpath)
-    variation_measure = np.zeros(10, dtype=np.float)
-    neg_num_measure = np.zeros(10, dtype=np.int)
-    neg_proportion_measure = np.zeros(10, dtype=np.float)
-    for m in range(1, 9):
+    num_hidden = model.m
+    num_observ = model.n
+    variation_measure = np.zeros(num_observ, dtype=np.float)
+    neg_num_measure = np.zeros(num_observ, dtype=np.int)
+    neg_proportion_measure = np.zeros(num_observ, dtype=np.float)
+    for m in xrange(1, num_observ+1):
         slearner = SpectralLearner()
-        slearner.train(training_data, m, model.n)
+        slearner.train(training_data, m, num_observ)
         true_probs = np.zeros(len(test_data))
         sl_probs = np.zeros(len(test_data))
         for i, seq in enumerate(test_data):
             true_probs[i] = model.probability(seq)
             sl_probs[i] = slearner.predict(seq)
-#             pprint("%f\t%f" % (true_probs[i], sl_probs[i]))
-#         pprint("-" * 50)
-#         pprint("%f\t%f" % (np.sum(true_probs), np.sum(sl_probs)))
+            #pprint("%e %e" % (true_probs[i], sl_probs[i]))
         neg_num_measure[m-1] = np.sum(sl_probs < 0, dtype=np.float)
         neg_proportion_measure[m-1] = neg_num_measure[m-1] / float(len(test_data))
         variation_measure[m-1] = np.sum(np.abs(sl_probs-true_probs))
-#         pprint("Variation distance: %f" % variation_measure[m-1])
-#         pprint("Number of negative probabilities: %d" % neg_num_measure[m-1])
-#         pprint("Percentage of negative probabilities: %f" % neg_proportion_measure[m-1])
-#         pprint("*" * 50)
+        pprint("Model Rank Hyperparameter: %d" % m)
+        pprint("Sum of all true probabilities: %f" % np.sum(true_probs))
+        pprint("Sum of all estimated probabilities: %f" % np.sum(sl_probs))
+        pprint("*" * 50)
     statistics = np.array([variation_measure, neg_num_measure, neg_proportion_measure])
     statistics = statistics.T
-    np.savetxt(log_filename, statistics, delimiter=",", fmt="%.4f")
+    np.savetxt(log_filename, statistics, delimiter=",", fmt="%e")
     
     
 if __name__ == '__main__':
     usage = '''
-    ./experiment.py train_data test_data model_path model_parameter 
-    log_filename
+    ./experiment.py training_filename test_filename model_filename log_filename
     '''
     if len(sys.argv) < 5:
         print usage
         exit()
     #compare_with_em(sys.argv[1], sys.argv[2], sys.argv[3], int(sys.argv[4]), sys.argv[5])
-    model_selection(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
+    training_filename = sys.argv[1]
+    test_filename = sys.argv[2]
+    model_filename = sys.argv[3]
+    log_filename = sys.argv[4]
+    model_selection(training_filename, test_filename, model_filename, log_filename)
