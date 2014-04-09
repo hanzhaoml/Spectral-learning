@@ -183,15 +183,19 @@ class HMM(object):
             grids[i - 1, :] = np.dot(grids[i, :], self.T * self.O[seq[i], :][:, np.newaxis])
         return grids
             
-    def gendata(self, dsize, sqlen=100):
+    def generate_test_data(self, dsize, min_seq_len=3, max_seq_len=50):
         '''
         @dsize:
             type:    numpy.uint64
             param:   data size to be generated
             
-        @sqlen:
+        @min_seq_len:
             type:    numpy.uint64
-            param:   The maximal length of each data sequence
+            param:   The minimum length of each observation sequence, inclusive
+
+        @max_seq_len:
+            type:    numpy.int
+            param:   The maximum length of each observation sequence, exclusive
         
         @return:
             type:    list[list_1, list_2, ... list_dsize]
@@ -201,7 +205,7 @@ class HMM(object):
         for i in xrange(dsize):
             # Cumulative distribution of the states
             accdist = np.add.accumulate(self.sd)
-            rlen = np.random.randint(3, sqlen)
+            rlen = np.random.randint(min_seq_len, max_seq_len)
             sq = np.zeros(rlen, dtype=np.uint64)
             # Initial state chosen based on the statioinary distribution
             state = (np.where(accdist >= np.random.rand())[0])[0]
@@ -213,10 +217,6 @@ class HMM(object):
                 sq[j] = observ
             data.append(sq)        
         return data
-    
-    def generate_test_data(self, seq_length):
-        test_seqs = np.zeros((self.n ** seq_length, seq_length), dtype=np.int)
-        return self.cartesian(seq_length, test_seqs)
     
     def generate_train_data(self, seq_length):
         train_seq = np.zeros(seq_length, dtype=np.int)
