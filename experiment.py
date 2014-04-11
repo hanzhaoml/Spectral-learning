@@ -135,6 +135,10 @@ def model_selection(trainfile, testfile, modelpath, log_filename):
             # pprint("%e %e" % (true_probs[i], sl_probs[i]))
         neg_num_measure[m - 1] = np.sum(sl_probs < 0, dtype=np.float)
         neg_proportion_measure[m - 1] = neg_num_measure[m - 1] / float(len(test_data))
+        partition_function = np.sum(true_probs)
+        #Normalizing joint probability distribution to get conditional distribution
+        true_probs /= partition_function
+        sl_probs /= partition_function
         variation_measure[m - 1] = np.sum(np.abs(sl_probs - true_probs))
         pprint("Model Rank Hyperparameter: %d" % m)
         pprint("Sum of all true probabilities: %f" % np.sum(true_probs))
@@ -148,6 +152,7 @@ def model_selection(trainfile, testfile, modelpath, log_filename):
 if __name__ == '__main__':
     usage = '''
     ./experiment.py training_filename test_filename model_filename log_filename
+    rank_hyperparameter
     '''
     if len(sys.argv) < 5:
         print usage
@@ -156,6 +161,6 @@ if __name__ == '__main__':
     test_filename = sys.argv[2]
     model_filename = sys.argv[3]
     log_filename = sys.argv[4]
-#     model_selection(training_filename, test_filename, model_filename, log_filename)
-    rank_hyperparameter = 4
+    #model_selection(training_filename, test_filename, model_filename, log_filename)
+    rank_hyperparameter = int(sys.argv[5]) 
     compare_with_em(training_filename, test_filename, model_filename, rank_hyperparameter, log_filename)
