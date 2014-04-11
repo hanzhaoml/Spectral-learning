@@ -5,7 +5,6 @@
 # Copyright (C) 2013 KeiraZhao <zhaohan2009011312@gmail.com>
 #
 # Distributed under terms of the Tsinghua University license.
-import math
 import time
 import csv
 import sys
@@ -56,15 +55,16 @@ def EM_consistency(training_filename, test_filename, model_filename):
     mean_log_prob = np.zeros(num_segments, dtype=np.float)
     std_log_prob = np.zeros(num_segments, dtype=np.float)
 #     Computing the log-likelihood function value using true model parameters
-    true_log_prob = reduce(lambda x: math.log(hmm.probability(x)), test_data, 0.0)
+    true_log_prob = np.sum(np.log([hmm.probability(x) for x in test_data]))
 #     Train HMM with EM algorithm and then compute the mean log-probability and its
 #     corresponding standard deviation
     for i in xrange(1, num_segments + 1):
-        cur_training_data = training_data[:i * num_chunks]
+        pprint("Current Training Size: %d" % (i*num_chunks))
+        cur_training_data = training_data[: i*num_chunks]
         log_probs = np.zeros(num_restarts, dtype=np.float)
         for j in xrange(num_restarts):
             learner.train(cur_training_data)
-            log_probs[j] = reduce(lambda x: math.log(learner.predict(x)), test_data, 0.0)
+            log_probs[j] = np.sum(np.log([learner.predict(x) for x in test_data]))
         mean_log_prob[i] = np.mean(log_probs)
         std_log_prob[i] = np.std(log_probs)
 #     Repeat true_log_prob to form a vector of the same length as mean_log_prob and std_log_prob
