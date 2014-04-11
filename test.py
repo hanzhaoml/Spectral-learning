@@ -31,7 +31,7 @@ def testBaumWelch(training_filename, test_filename, model_filename):
         learner.train(training_data)
         end_time = time.clock()
         pprint("=" * 50)
-        pprint("EM %d th running" % i+1)
+        pprint("EM %d th running" % (i+1))
         pprint("Total time used to train HMM with EM: %f" % (end_time-start_time))
         pprint("Stationary distribution: ")
         pprint(learner.stationary_dist)
