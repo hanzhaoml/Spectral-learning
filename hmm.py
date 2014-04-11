@@ -28,7 +28,7 @@ class HMM(object):
     There are some prerequisites for T and O as follows: 
     1    rank(T) = rank(O) = m
     '''
-    def __init__(self, m=0, n=0, filename=None):
+    def __init__(self, m=0, n=0):
         '''
         @m:    
             type:    numpy.uint64
@@ -246,6 +246,18 @@ class HMM(object):
                 out[j*chunks: (j+1)*chunks, 1:] = out[0:chunks, 1:]
         return out
     
+    @property
+    def stationary_dist(self):
+        return self.sd
+    
+    @property
+    def transition_matrix(self):
+        return self.T
+    
+    @property
+    def observation_matrix(self):
+        return self.O
+        
     @staticmethod
     def to_file(filename, model):
         with file(filename, "wb") as fout:

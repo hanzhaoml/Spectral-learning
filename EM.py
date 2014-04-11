@@ -85,6 +85,18 @@ class BaumWelch(object):
         
         @attention: This version of EM algorithm has been vectorized, hence being more efficient
         '''
+#         When train is called each time, start with different random points
+        self.T = np.random.rand(self.m, self.m)
+        norms = np.sum(self.T, axis=0)
+        self.T /= norms
+        
+        self.O = np.random.rand(self.n, self.m)
+        norms = np.sum(self.O, axis=0)
+        self.O /= norms
+        
+        self.sd = np.random.rand(self.m)
+        norms = np.sum(self.sd)
+        self.sd /= norms
         # Partition the sequence first to avoid numeric issues
         num_partitions = len(sequence) / seg_length
         seq_lists = [sequence[i*seg_length: (i+1)*seg_length] for i in xrange(num_partitions)]
