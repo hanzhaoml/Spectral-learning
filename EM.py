@@ -96,14 +96,6 @@ class BaumWelch(object):
         # Forward-Backward Algorithm to train HMM on seq_lists
         while True:
             iters += 1
-#             pprint("=" * 50)
-#             pprint("Stationary distribution: ")
-#             pprint(self.stationary_dist)
-#             pprint("Number of iterations: %d" % iters)
-#             pprint("Transition matrix: ")
-#             pprint(self.transition_matrix)
-#             pprint("Observation matrix: ")
-#             pprint(self.observation_matrix)
             pi = np.zeros(self.m, dtype=np.float)
             transition = np.zeros((self.m, self.m), dtype=np.float)
             observation = np.zeros((self.n, self.m), dtype=np.float)
