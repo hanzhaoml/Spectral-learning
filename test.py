@@ -88,7 +88,7 @@ def EM_consistency_same(training_filename, test_filename, model_filename):
     if len(training_data) > num_partitions * seq_length:
         test_data.append(training_data[num_partitions * seq_length: ])
     #Training parameters
-    num_chunks = 1000
+    num_chunks = 10
     num_segments = 20
     num_restarts = 20
     mean_log_prob = np.zeros(num_segments, dtype=np.float)
@@ -113,7 +113,26 @@ def EM_consistency_same(training_filename, test_filename, model_filename):
 #     Repeat true_log_prob to form a vector of the same length as mean_log_prob and std_log_prob
     true_log_prob = np.repeat(true_log_prob, num_segments)
     return np.array([true_log_prob, mean_log_prob, std_log_prob]).T
-    
+   
+def easy_to_distinguish(training_filename, test_filename, model_filename):
+    num_hidden = 2
+    num_observ = 2
+    num_training_insts = 2000
+    num_test_insts = 100
+    hmm = HMM(num_hidden, num_observ)
+    hmm.T = np.array([[0.91, 0.09], [0.15, 0.85]], dtype=np.float)
+    hmm.O = np.array([[0.73, 0.27], [0.19, 0.81]], dtype=np.float)
+    HMM.to_file(model_filename, hmm)
+    training_data = hmm.generate_train_data(num_training_insts)
+    np.savetxt(training_filename, [training_data], delimiter=",", fmt="%d")
+    pprint("FInished generating sample data...")
+    pprint("Initial distribution of HMM:")
+    pprint(hmm.stationary_dist)
+    pprint("Transition matrix:")
+    pprint(hmm.transition_matrix)
+    pprint("Observation matrix: ")
+    pprint(hmm.observation_matrix)
+
 def main(training_filename, test_filename, model_filename):
     num_hidden = 2
     num_observ = 2
@@ -151,4 +170,4 @@ if __name__ == '__main__':
     #statistics = EM_consistency(training_filename, test_filename, model_filename)
     statistics = EM_consistency_same(training_filename, test_filename, model_filename)
     np.savetxt(log_filename, statistics, delimiter=",", fmt="%e")
-    
+    #easy_to_distinguish(training_filename, test_filename, model_filename)
