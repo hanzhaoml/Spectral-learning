@@ -1,0 +1,7 @@
+*.pyc
+*.data
+*.npy
+*.txt
+*.log
+results/*
+

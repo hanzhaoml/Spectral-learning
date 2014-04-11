@@ -33,6 +33,18 @@ class BaumWelch(object):
     def predict(self, seq):
         return np.sum(self.alpha(seq)[len(seq)-1, :])
     
+    @property
+    def transition_matrix(self):
+        return self.T
+    
+    @property
+    def observation_matrix(self):
+        return self.O
+        
+    @property
+    def stationary_dist(self):
+        return self.sd
+    
     def alpha(self, seq):
         '''
         @seq:
@@ -84,6 +96,16 @@ class BaumWelch(object):
         # Forward-Backward Algorithm to train HMM on seq_lists
         while True:
             iters += 1
+            
+            pprint("=" * 50)
+            pprint("Stationary distribution: ")
+            pprint(self.stationary_dist)
+            pprint("Number of iterations: %d" % iter)
+            pprint("Transition matrix: ")
+            pprint(self.transition_matrix)
+            pprint("Observation matrix: ")
+            pprint(self.observation_matrix)
+            
             pi = np.zeros(self.m, dtype=np.float)
             transition = np.zeros((self.m, self.m), dtype=np.float)
             observation = np.zeros((self.n, self.m), dtype=np.float)
@@ -105,7 +127,6 @@ class BaumWelch(object):
             transition /= np.sum(transition, axis=0)[np.newaxis, :]
             observation /= np.sum(observation, axis=0)[np.newaxis, :]
             pi /= np.sum(pi)
-            pprint("End of %d iterations" % iters)
             if np.sum(np.abs(self.T - transition)) < threshold and np.sum(np.abs(self.O - observation)) < threshold:
                 break
             self.T = transition
