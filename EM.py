@@ -134,6 +134,7 @@ class BaumWelch(object):
             self.T = transition
             self.O = observation
             self.sd = pi
+        #local_max_obj = np.sum(np.log([self.predict(seq) for seq in seq_lists]))
 
 
 def main():
