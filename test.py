@@ -50,7 +50,7 @@ def EM_consistency(training_filename, test_filename, model_filename):
             test_data.append(np.asarray(map(int, line)))
 #     Setting parameters to start with EM-consistency toy experiment
     num_chunks = 1000
-    num_segments = 10
+    num_segments = 20
     #num_segments = training_data.shape[0] / num_chunks
     num_restarts = 20
     mean_log_prob = np.zeros(num_segments, dtype=np.float)
@@ -65,13 +65,13 @@ def EM_consistency(training_filename, test_filename, model_filename):
         for j in xrange(num_restarts):
             learner.train(cur_training_data)
             log_probs[j] = np.sum(np.log([learner.predict(x) for x in test_data]))
-        mean_log_prob[i] = np.mean(log_probs)
-        std_log_prob[i] = np.std(log_probs)
+        mean_log_prob[i-1] = np.mean(log_probs)
+        std_log_prob[i-1] = np.std(log_probs)
         pprint("-" * 50)
         pprint("Current Training Size: %d" % (i*num_chunks))
         pprint("True log-likelihood: %f" % true_log_prob)
-        pprint("EM mean log-likelihood: %f" % mean_log_prob[i])
-        pprint("EM standard deviation of log-likelihood: %f" % std_log_prob[i])
+        pprint("EM mean log-likelihood: %f" % mean_log_prob[i-1])
+        pprint("EM standard deviation of log-likelihood: %f" % std_log_prob[i-1])
 #     Repeat true_log_prob to form a vector of the same length as mean_log_prob and std_log_prob
     true_log_prob = np.repeat(true_log_prob, num_segments)
     return np.array([true_log_prob, mean_log_prob, std_log_prob]).T
