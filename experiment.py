@@ -20,9 +20,10 @@ class Experimenter(object):
     This class is built to facilitate the experiments of different learning
     algorithms.
     '''
-    def __init__(self, training_filename, test_filename, model_filename, model_parameter):
+    def __init__(self, training_filename, test_filename, model_filename, model_parameter, 
+                 num_em_restarts=20):
         self._training_data = np.loadtxt(training_filename, dtype=np.int, delimiter=",")
-        #self._test_data = np.loadtxt(test_filename, dtype=np.int, delimiter=",")
+        # self._test_data = np.loadtxt(test_filename, dtype=np.int, delimiter=",")
         self._test_data = []
         with file(test_filename, "rb") as fin:
             reader = csv.reader(fin)
@@ -30,7 +31,20 @@ class Experimenter(object):
                 self._test_data.append(np.asarray(map(int, line)))
         self._model = HMM.from_file(model_filename)
         self._parameter = model_parameter
-        
+        self._num_em_restarts = num_em_restarts
+    
+    @property
+    def training_size(self):
+        return self._training_data.shape[0]
+    
+    @property
+    def test_size(self):
+        return len(self._test_data)
+
+    @property
+    def num_em_restarts(self):
+        return self._num_em_restarts
+                
     def _train(self, num_train_inst):
         '''
         Train a Hidden Markov Model with differnt learning algorithms
@@ -46,8 +60,8 @@ class Experimenter(object):
         sl_time = end_time - start_time
         # Expectation Maximization algorithm
         self._em_learners = []
-        em_times = np.zeros(20, dtype=np.float)
-        for i in xrange(20):
+        em_times = np.zeros(self._num_em_restarts, dtype=np.float)
+        for i in xrange(self._num_em_restarts):
             self._em_learners.append(BaumWelch(self._parameter, self._model.n))
             start_time = time.time()
             self._em_learners[i].train(training_data)
@@ -56,7 +70,7 @@ class Experimenter(object):
             em_times[i] = end_time - start_time
         return (sl_time, np.mean(em_times))
     
-    def run_experiment(self, num_train_inst, log_filename):
+    def run_experiment(self, num_train_inst):
         '''
         @log_filename:    string, filepath of the output log
         '''
@@ -64,45 +78,38 @@ class Experimenter(object):
         sl_time, em_time = self._train(num_train_inst)
         true_probs = np.zeros(len(self._test_data), dtype=np.float)
         sl_probs = np.zeros(len(self._test_data), dtype=np.float)
-        em_probs = np.zeros((20, len(self._test_data)), dtype=np.float)
+        em_probs = np.zeros((self._num_em_restarts, len(self._test_data)), dtype=np.float)
         for i, seq in enumerate(self._test_data):
             true_probs[i] = self._model.probability(seq)
             sl_probs[i] = self._sl_learner.predict(seq)
-            for j in xrange(20):
+            for j in xrange(self._num_em_restarts):
                 em_probs[j, i] = self._em_learners[j].predict(seq)
         # L1-distance between true probability and inference probability by spectral learning
         sl_variation_dist = np.abs(true_probs - sl_probs)
         # L1-distance between true probability and inference probability by expectation maximization
         em_variation_dist = np.abs(true_probs - em_probs)
         # Percentage of negative probabilities:
-        neg_percentage = np.sum(sl_probs < 0, dtype=np.float) / sl_probs.shape[0]
-        num_neg_probs = np.sum(sl_probs < 0)
-#         with file(log_filename, "wb") as fout:
-        #pprint('The value of m used in spectral learning algorithm: %d\n' % self._parameter)
-        #pprint('Truth\tSL\t EM\t OEM\n')
-        #for i in xrange(len(self._test_data)):
-            #line = '%e\t%e\t%e\n' % (true_probs[i], sl_probs[i], em_probs[i])
-            #pprint(line)        
-        #pprint("-" * 50 + "\n")
-        #line = "%f\t%f\t%f\n" % (np.sum(true_probs), np.sum(sl_probs), np.sum(em_probs))
-        #pprint(line)
-        #pprint("Percentage of negative probabilities: %f" % neg_percentage)
-        #pprint("Number of negative probabilies: %d" % num_neg_probs)
-        #pprint("Variation distance for Spectral Learning: %f" % np.sum(sl_variation_dist))
-        #pprint("Variation distance for Expectation Maximization: %f" % np.min(np.sum(em_variation_dist, axis=1)))        
         sl_variation_measure = np.sum(sl_variation_dist)
-        em_variation_measure = np.min(np.sum(em_variation_dist, axis=1))
+        em_variation_measure = np.sum(em_variation_dist, axis=1)
         return (sl_time, em_time, sl_variation_measure, em_variation_measure)
     
     
 def compare_with_em(trainfile, testfile, modelpath, model_parameter, log_filename):
     experimenter = Experimenter(trainfile, testfile, modelpath, model_parameter)
-    num_train_insts = 1000 * np.arange(1, 11)
-    statistics = np.zeros((10, 5), dtype=np.float)
+    chunk_size = 1000
+    num_train_chunks = experimenter.training_size / chunk_size
+    num_train_insts = chunk_size * np.arange(1, num_train_chunks+1)
+    # Number of Columns needed = num_em_restart + sl_prob + em_train_time + sl_train_time + num_training_inst
+    #                          = num_em_restart + 4
+    statistics = np.zeros((num_train_chunks, experimenter.num_em_restarts+4), dtype=np.float)
     for i, num_train_inst in enumerate(num_train_insts):
         statistics[i, 0] = num_train_inst
-        statistics[i, 1:] = experimenter.run_experiment(num_train_inst, 'experiment.log')
-    np.savetxt(log_filename, statistics, delimiter=",", fmt="%.4f")
+        (sl_time, em_time, sl_variation_measure, em_variation_measure) = experimenter.run_experiment(num_train_inst)
+        statistics[i, 1] = sl_time
+        statistics[i, 2] = em_time
+        statistics[i, 3] = sl_variation_measure
+        statistics[i, 4:] = em_variation_measure
+    np.savetxt(log_filename, statistics, delimiter=",", fmt="%e")
     
 def model_selection(trainfile, testfile, modelpath, log_filename):
     training_data = np.loadtxt(trainfile, dtype=np.int, delimiter=",")
@@ -117,7 +124,7 @@ def model_selection(trainfile, testfile, modelpath, log_filename):
     variation_measure = np.zeros(num_observ, dtype=np.float)
     neg_num_measure = np.zeros(num_observ, dtype=np.int)
     neg_proportion_measure = np.zeros(num_observ, dtype=np.float)
-    for m in xrange(1, num_observ+1):
+    for m in xrange(1, num_observ + 1):
         slearner = SpectralLearner()
         slearner.train(training_data, m, num_observ)
         true_probs = np.zeros(len(test_data))
@@ -125,10 +132,10 @@ def model_selection(trainfile, testfile, modelpath, log_filename):
         for i, seq in enumerate(test_data):
             true_probs[i] = model.probability(seq)
             sl_probs[i] = slearner.predict(seq)
-            #pprint("%e %e" % (true_probs[i], sl_probs[i]))
-        neg_num_measure[m-1] = np.sum(sl_probs < 0, dtype=np.float)
-        neg_proportion_measure[m-1] = neg_num_measure[m-1] / float(len(test_data))
-        variation_measure[m-1] = np.sum(np.abs(sl_probs-true_probs))
+            # pprint("%e %e" % (true_probs[i], sl_probs[i]))
+        neg_num_measure[m - 1] = np.sum(sl_probs < 0, dtype=np.float)
+        neg_proportion_measure[m - 1] = neg_num_measure[m - 1] / float(len(test_data))
+        variation_measure[m - 1] = np.sum(np.abs(sl_probs - true_probs))
         pprint("Model Rank Hyperparameter: %d" % m)
         pprint("Sum of all true probabilities: %f" % np.sum(true_probs))
         pprint("Sum of all estimated probabilities: %f" % np.sum(sl_probs))
@@ -145,9 +152,10 @@ if __name__ == '__main__':
     if len(sys.argv) < 5:
         print usage
         exit()
-    #compare_with_em(sys.argv[1], sys.argv[2], sys.argv[3], int(sys.argv[4]), sys.argv[5])
     training_filename = sys.argv[1]
     test_filename = sys.argv[2]
     model_filename = sys.argv[3]
     log_filename = sys.argv[4]
-    model_selection(training_filename, test_filename, model_filename, log_filename)
+#     model_selection(training_filename, test_filename, model_filename, log_filename)
+    rank_hyperparameter = 4
+    compare_with_em(training_filename, test_filename, model_filename, rank_hyperparameter, log_filename)
