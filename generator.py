@@ -51,7 +51,7 @@ def regenerate_training(hmm, training_filename, dsize):
     np.savetxt(training_filename, [training_seq], delimiter=",", fmt="%d")
 
 def regenerate_test(hmm, test_filename, dsize, max_length=50):
-    test_seqs = hmm.gendata(dsize, max_length)
+    test_seqs = hmm.generate_test_data(tsize, min_seq_len=50, max_seq_len=51)
     with file(test_filename, "wb") as fout:
         writer = csv.writer(fout)
         for seq in test_seqs:
@@ -72,7 +72,7 @@ if __name__ == '__main__':
     dsizes = [10000, 50000, 100000, 500000, 1000000, 5000000]
     tsize = int(sys.argv[4])
     file_tager = sys.argv[1]
-    generate(m, n, dsizes, tsize, file_tager)
-    #hmm = HMM.from_file(sys.argv[1])
+    #generate(m, n, dsizes, tsize, file_tager)
+    hmm = HMM.from_file(sys.argv[1])
     #regenerate_training(hmm, sys.argv[2], int(sys.argv[3]))
-    #regenerate_test(hmm, sys.argv[2], int(sys.argv[3]))
+    regenerate_test(hmm, "m4n8_50_len_test.data", tsize)
