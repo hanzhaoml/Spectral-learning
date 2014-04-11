@@ -91,21 +91,19 @@ class BaumWelch(object):
         if len(sequence) > num_partitions * seg_length:
             seq_lists.append(sequence[num_partitions*seg_length:])            
         seq_lists = np.array(seq_lists)
-        threshold = self.m / 100.0
+        threshold = self.m / 500.0
         iters = 0
         # Forward-Backward Algorithm to train HMM on seq_lists
         while True:
             iters += 1
-            
-            pprint("=" * 50)
-            pprint("Stationary distribution: ")
-            pprint(self.stationary_dist)
-            pprint("Number of iterations: %d" % iter)
-            pprint("Transition matrix: ")
-            pprint(self.transition_matrix)
-            pprint("Observation matrix: ")
-            pprint(self.observation_matrix)
-            
+#             pprint("=" * 50)
+#             pprint("Stationary distribution: ")
+#             pprint(self.stationary_dist)
+#             pprint("Number of iterations: %d" % iters)
+#             pprint("Transition matrix: ")
+#             pprint(self.transition_matrix)
+#             pprint("Observation matrix: ")
+#             pprint(self.observation_matrix)
             pi = np.zeros(self.m, dtype=np.float)
             transition = np.zeros((self.m, self.m), dtype=np.float)
             observation = np.zeros((self.n, self.m), dtype=np.float)
