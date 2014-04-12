@@ -11,4 +11,4 @@ title(title_content);
 xlabel('Training Size');
 ylabel('Variation Distance');
 grid on;
-legend('Spectral Learning', 'EM');
+legend('LearnHMM', 'EM');
