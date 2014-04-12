@@ -51,7 +51,7 @@ def EM_consistency(training_filename, test_filename, model_filename):
 #     Setting parameters to start with EM-consistency toy experiment
     num_chunks = 1000
     num_segments = 20
-    #num_segments = training_data.shape[0] / num_chunks
+    # num_segments = training_data.shape[0] / num_chunks
     num_restarts = 20
     mean_log_prob = np.zeros(num_segments, dtype=np.float)
     std_log_prob = np.zeros(num_segments, dtype=np.float)
@@ -60,18 +60,18 @@ def EM_consistency(training_filename, test_filename, model_filename):
 #     Train HMM with EM algorithm and then compute the mean log-probability and its
 #     corresponding standard deviation
     for i in xrange(1, num_segments + 1):
-        cur_training_data = training_data[: i*num_chunks]
+        cur_training_data = training_data[: i * num_chunks]
         log_probs = np.zeros(num_restarts, dtype=np.float)
         for j in xrange(num_restarts):
             learner.train(cur_training_data)
             log_probs[j] = np.sum(np.log([learner.predict(x) for x in test_data]))
-        mean_log_prob[i-1] = np.mean(log_probs)
-        std_log_prob[i-1] = np.std(log_probs)
+        mean_log_prob[i - 1] = np.mean(log_probs)
+        std_log_prob[i - 1] = np.std(log_probs)
         pprint("-" * 50)
-        pprint("Current Training Size: %d" % (i*num_chunks))
+        pprint("Current Training Size: %d" % (i * num_chunks))
         pprint("True log-likelihood: %f" % true_log_prob)
-        pprint("EM mean log-likelihood: %f" % mean_log_prob[i-1])
-        pprint("EM standard deviation of log-likelihood: %f" % std_log_prob[i-1])
+        pprint("EM mean log-likelihood: %f" % mean_log_prob[i - 1])
+        pprint("EM standard deviation of log-likelihood: %f" % std_log_prob[i - 1])
 #     Repeat true_log_prob to form a vector of the same length as mean_log_prob and std_log_prob
     true_log_prob = np.repeat(true_log_prob, num_segments)
     return np.array([true_log_prob, mean_log_prob, std_log_prob]).T
@@ -80,46 +80,45 @@ def EM_consistency_same(training_filename, test_filename, model_filename):
     hmm = HMM.from_file(model_filename)
     training_data = np.loadtxt(training_filename, dtype=np.int, delimiter=",")
     learner = BaumWelch(hmm.m, hmm.n)
-    #Training parameters
+    # Training parameters
     num_chunks = 10
     num_segments = 20
     num_restarts = 20
     mean_log_prob = np.zeros(num_segments, dtype=np.float)
     std_log_prob = np.zeros(num_segments, dtype=np.float)
     true_log_prob = np.zeros(num_segments, dtype=np.float)
-    #Computing the log-likelihood function value using true model parameters
-    #Train HMM with EM algorithm and then compute the mean log-probability and its
-    #Corresponding standard deviation
+    # Computing the log-likelihood function value using true model parameters
+    # Train HMM with EM algorithm and then compute the mean log-probability and its
+    # Corresponding standard deviation
     for i in xrange(1, num_segments + 1):
-        cur_training_data = training_data[: i*num_chunks]
-        #Partition a long training sequence into set of short sequences
+        cur_training_data = training_data[: i * num_chunks]
+        # Partition a long training sequence into set of short sequences
         seq_length = 100
         num_partitions = len(cur_training_data) / seq_length
-        test_data = [cur_training_data[k*seq_length: (k+1)*seq_length] for k in xrange(num_partitions)]
+        test_data = [cur_training_data[k * seq_length: (k + 1) * seq_length] for k in xrange(num_partitions)]
         if len(cur_training_data) > num_partitions * seq_length:
             test_data.append(cur_training_data[num_partitions * seq_length: ])
-        #Compute the true log-likelihood
-        true_log_prob[i-1] = np.sum(np.log([hmm.probability(x) for x in test_data]))
+        # Compute the true log-likelihood
+        true_log_prob[i - 1] = np.sum(np.log([hmm.probability(x) for x in test_data]))
         log_probs = np.zeros(num_restarts, dtype=np.float)
         for j in xrange(num_restarts):
             learner.train(cur_training_data)
             log_probs[j] = np.sum(np.log([learner.predict(x) for x in test_data]))
-        mean_log_prob[i-1] = np.mean(log_probs)
-        std_log_prob[i-1] = np.std(log_probs)
+        mean_log_prob[i - 1] = np.mean(log_probs)
+        std_log_prob[i - 1] = np.std(log_probs)
         pprint("-" * 50)
         pprint("Value of i: %d" % i)
         pprint("Current training length: %d" % cur_training_data.shape[0])
-        pprint("Current Training Size: %d" % (i*num_chunks))
-        pprint("True log-likelihood: %f" % true_log_prob[i-1])
-        pprint("EM mean log-likelihood: %f" % mean_log_prob[i-1])
-        pprint("EM standard deviation of log-likelihood: %f" % std_log_prob[i-1])
+        pprint("Current Training Size: %d" % (i * num_chunks))
+        pprint("True log-likelihood: %f" % true_log_prob[i - 1])
+        pprint("EM mean log-likelihood: %f" % mean_log_prob[i - 1])
+        pprint("EM standard deviation of log-likelihood: %f" % std_log_prob[i - 1])
     return np.array([true_log_prob, mean_log_prob, std_log_prob]).T
    
 def easy_to_distinguish(training_filename, test_filename, model_filename):
     num_hidden = 2
     num_observ = 2
     num_training_insts = 2000
-    num_test_insts = 100
     hmm = HMM(num_hidden, num_observ)
     hmm.T = np.array([[0.91, 0.09], [0.15, 0.85]], dtype=np.float)
     hmm.O = np.array([[0.73, 0.27], [0.19, 0.81]], dtype=np.float)
@@ -168,7 +167,7 @@ if __name__ == '__main__':
     log_filename = sys.argv[4]
 #     testBaumWelch(training_filename, test_filename, model_filename) 
 #     main(training_filename, test_filename, model_filename)
-    #statistics = EM_consistency(training_filename, test_filename, model_filename)
+    # statistics = EM_consistency(training_filename, test_filename, model_filename)
     statistics = EM_consistency_same(training_filename, test_filename, model_filename)
     np.savetxt(log_filename, statistics, delimiter=",", fmt="%e")
-    #easy_to_distinguish(training_filename, test_filename, model_filename)
+    # easy_to_distinguish(training_filename, test_filename, model_filename)
