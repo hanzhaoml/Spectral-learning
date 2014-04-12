@@ -79,26 +79,27 @@ def EM_consistency(training_filename, test_filename, model_filename):
 def EM_consistency_same(training_filename, test_filename, model_filename):
     hmm = HMM.from_file(model_filename)
     training_data = np.loadtxt(training_filename, dtype=np.int, delimiter=",")
-    test_data = []
     learner = BaumWelch(hmm.m, hmm.n)
-    #Partition a long training sequence into set of short sequences
-    seq_length = 100
-    num_partitions = len(training_data) / seq_length
-    test_data = [training_data[i*seq_length: (i+1)*seq_length] for i in xrange(num_partitions)]
-    if len(training_data) > num_partitions * seq_length:
-        test_data.append(training_data[num_partitions * seq_length: ])
     #Training parameters
     num_chunks = 10
     num_segments = 20
     num_restarts = 20
     mean_log_prob = np.zeros(num_segments, dtype=np.float)
     std_log_prob = np.zeros(num_segments, dtype=np.float)
+    true_log_prob = np.zeros(num_segments, dtype=np.float)
     #Computing the log-likelihood function value using true model parameters
-    true_log_prob = np.sum(np.log([hmm.probability(x) for x in test_data]))
     #Train HMM with EM algorithm and then compute the mean log-probability and its
     #Corresponding standard deviation
     for i in xrange(1, num_segments + 1):
         cur_training_data = training_data[: i*num_chunks]
+        #Partition a long training sequence into set of short sequences
+        seq_length = 100
+        num_partitions = len(cur_training_data) / seq_length
+        test_data = [cur_training_data[k*seq_length: (k+1)*seq_length] for k in xrange(num_partitions)]
+        if len(cur_training_data) > num_partitions * seq_length:
+            test_data.append(cur_training_data[num_partitions * seq_length: ])
+        #Compute the true log-likelihood
+        true_log_prob[i-1] = np.sum(np.log([hmm.probability(x) for x in test_data]))
         log_probs = np.zeros(num_restarts, dtype=np.float)
         for j in xrange(num_restarts):
             learner.train(cur_training_data)
@@ -106,12 +107,12 @@ def EM_consistency_same(training_filename, test_filename, model_filename):
         mean_log_prob[i-1] = np.mean(log_probs)
         std_log_prob[i-1] = np.std(log_probs)
         pprint("-" * 50)
+        pprint("Value of i: %d" % i)
+        pprint("Current training length: %d" % cur_training_data.shape[0])
         pprint("Current Training Size: %d" % (i*num_chunks))
-        pprint("True log-likelihood: %f" % true_log_prob)
+        pprint("True log-likelihood: %f" % true_log_prob[i-1])
         pprint("EM mean log-likelihood: %f" % mean_log_prob[i-1])
         pprint("EM standard deviation of log-likelihood: %f" % std_log_prob[i-1])
-#     Repeat true_log_prob to form a vector of the same length as mean_log_prob and std_log_prob
-    true_log_prob = np.repeat(true_log_prob, num_segments)
     return np.array([true_log_prob, mean_log_prob, std_log_prob]).T
    
 def easy_to_distinguish(training_filename, test_filename, model_filename):
