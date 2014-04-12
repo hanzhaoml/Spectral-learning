@@ -28,88 +28,37 @@ class HMM(object):
     There are some prerequisites for T and O as follows: 
     1    rank(T) = rank(O) = m
     '''
-    def __init__(self, m=0, n=0):
+    def __init__(self, num_hidden, num_observ):
         '''
-        @m:    
-            type:    numpy.uint64
-            param:   The dimension of T, also the number of columns in T
+        @num_hidden:    np.int, number of hidden states in HMM.
         
-        @n:    
-            type:    numpy.uint64
-            param:   The number of columns in O. n >= m
-        
-        @T:
-            type:    numpy.array
-            param:   The transition matrix of HMM
-        
-        @O:
-            type:    numpy.array
-            param:   The observation(emission) matrix of HMM
-        
-        @sd:
-            type:    numpy.array
-            param:   The stationary distribution of HMM
+        @num_observ:    np.int, number of observations in HMM.
         '''
-        
-        pprint("In the initialize method of HMM:")
-        pprint("M: %d" % m)
-        pprint("N: %d" % n)
-        
-        self.m = m
-        self.n = n
-        self.T = self._randomT(m)
-        self.O = self._randomO(m, n)
-        (self.cT, self.cO) = self._build()
-        self.sd = self._converge()
+        pprint("Generating HMM with dimension: (%d, %d)" % (num_hidden, num_observ))
+        self._num_hidden = num_hidden
+        self._num_observ = num_observ
+#         Randomly generating transition matrix and observation matrix
+        self._transition_matrix = self._randomT()
+        self._observation_matrix = self._randomO()
+        (self._cT, self._cO) = self._build()
+#         Set the initial distribution of HMM as its stationary distribution
+        self._pi = self._converge()
     
-    def _randomT(self, m):
-        '''
-        @m:
-            type:    numpy.uint64
-            param:   The dimension of T
-            
-        @return:
-            type:    numpy.array
-            param:   Random Transition matrix of HMM 
-            
-        
-        Given m, this procedure first builds a m-dimension matrix with random numbers.
-        Then normailze each column of the matrix by one-norm (That is, 
-        the sum of components in each column vector equals one)        
-        '''
-        while True:
-            randm = np.random.rand(m, m)
-            norms = np.sum(randm, axis=0)
-            randm /= norms
-            if np.linalg.matrix_rank(randm) == m:
-                return randm
+    def _randomT(self):
+        randm = np.random.rand(self._num_hidden, self._num_hidden)
+        norms = np.sum(randm, axis=0)
+        randm /= norms
+        return randm
     
-    def _randomO(self, m, n):
-        '''
-        @m:
-            type:    numpy.uint64
-            param:   The column dimension of O
-        
-        @n:
-            type:    numpy.uint64
-            param:   The number of rows in O
-            
-        @return:
-            type:    numpy.array
-            param:   Random Observation matrix of HMM
-        '''
-        while True:
-            rando = np.random.rand(n, m)
-            norms = np.sum(rando, axis=0)
-            rando /= norms
-            if np.linalg.matrix_rank(rando) == m:
-                return rando
+    def _randomO(self):
+        rando = np.random.rand(self._num_observ, self._num_hidden)
+        norms = np.sum(rando, axis=0)
+        rando /= norms
+        return rando
 
     def _build(self):
         '''
-        @return:
-            type:    (numpy.array, numpy.array)
-            param:   Cumulative distribution of Transition matrix
+        @attention:  Cumulative distribution of Transition matrix
                      and Cumulative distribtion of Observation matrix
                      Cumulative matrices are used to randomly generate synthetic data...
         '''
@@ -117,16 +66,15 @@ class HMM(object):
     
     def _converge(self):
         '''
-        @return:
-            type:    numpy.array
-            param:   stationary distribution of HMM
+        @attention: Compute the stationary distribution of HMM.
         '''
-        (eigw, eigv) = np.linalg.eig(self.T)
+        (eigw, eigv) = np.linalg.eig(self._transition_matrix)
         sd = eigv[:, np.abs(eigw - 1.0) < np.float(1e-6)][:, 0]
         sd = np.abs(np.real(sd) / np.linalg.norm(sd, 1))
         return sd
         
-    def probability(self, seq):
+#     TODO: Refactoring the code from here, the code needed to be used by Farheen.
+    def predict(self, seq):
         '''
         @seq:
             type:    numpy.uint64
