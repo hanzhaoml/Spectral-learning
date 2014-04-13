@@ -400,3 +400,127 @@ class EMHMM(HMM):
         self._transition_matrix = opt_transition_matrix
         self._observation_matrix = opt_observation_matrix
         self._initial_dist = opt_init_dist
+
+
+class SLHMM(HMM):
+    '''
+    This class is used to learning HMM using Spectral Learning algorithm.
+    For more detail, please refer to the following paper:
+    
+    A Spectral Algorithm for Learning Hidden Markov Model, Hsu et al.
+    http://arxiv.org/pdf/0811.4413.pdf
+    
+    Note that the spectral learning algorithm proposed in the paper above
+    only supports solving the estimation problem and the learning problem 
+    (not learning the transition matrix, observation matrix and initial
+    distribution directly, but return a set of transformed observable 
+    operators which support computing the marginal joint probability distribution:
+    Pr(o_1, o_2,..., o_t))
+    '''
+    def __init__(self, num_hidden, num_observ, 
+                 transition_matrix=None, observation_matrix=None, init_dist=None):
+        '''
+        @num_hideen: np.int, number of hidden states in HMM.
+        @num_observ: np.int, number of observations in HMM.
+        
+        @transition_matrix: np.ndarray, shape = (num_hidden, num_hidden)
+                            Transition matrix of the HMM, denoted by T, 
+                            T_ij = Pr(h_t+1 = i | h_t = j)
+                            
+                            Default value is None. If it is not None, it must satisfy
+                            the following two conditions:
+                            1.     shape = (num_hidden, num_hidden)
+                            2.     All the elements should be non-negative
+                            
+                            Note: The input transition matrix will be normalized column-wisely
+        @observation_matrix: np.ndarray, shape = (num_observ, num_hidden)
+                             Observation matrix of the HMM, denoted by O,
+                             O_ij = Pr(o_t = i | h_t = j)
+                            
+                            Default value is None. If it is not None, it must satisfy 
+                            the following two conditions:
+                            1.        shape = (num_observ, num_hidden)
+                            2.        All the elements should be non-negative
+                            
+                            Note: The input observation matrix will be normalized column-wisely
+        @initial_dist: np.ndarray, shape = (num_hidden,)
+                       Initial distribution for hidden states.
+                       Pi_i = Pr(h_1 = i)
+                       
+                       Default value is None. If it is not None, it must satisfy the following two
+                       conditions:
+                       1.     shape = (num_hidden,)
+                       2.     All the elements should be non-negative
+                       
+                       Note: The input array will be normalized to form a probability distribution.
+        '''
+        # Call initial method of base class directly
+        super(EMHMM, self).__init__(num_hidden, num_observ, 
+                       transition_matrix, observation_matrix, init_dist)
+        # First three order moments
+        self._P_1 = np.zeros(self._num_observ, dtype=np.float)
+        self._P_21 = np.zeros((self._num_observ, self._num_observ), dtype=np.float)
+        self._P_3x1 = np.zeros((self._num_observ, self._num_observ, self._num_observ), dtype=np.float)
+                
+    # Override the fit algorithm provided in HMM
+    def fit(self, sequences, rank_hyperparameter=None, verbose=False):
+        '''
+        Solve the learning problem with HMM.
+        @sequences: [np.array]. List of observation sequences, each observation 
+                    sequence can have different length
+        
+        @attention: Note that all the observations should be encoded as integers
+                    between [0, num_observ). 
+        '''
+        # Set default value of rank-hyperparameter
+        if rank_hyperparameter == None:
+            rank_hyperparameter = self._num_hidden
+        # Training triples
+        trilst = np.array([sequence[idx: idx+3] for sequence in sequences
+                           for idx in xrange(len(sequence)-2)], dtype=np.int)
+        if verbose:
+            pprint('Number of separated triples: %d' % trilst.shape[0])
+        # Parameter estimation
+        # Frequency based estimation
+        for sq in trilst:
+            self._P_1[sq[0]] += 1
+            self._P_21[sq[1], sq[0]] += 1
+            self._P_3x1[sq[1], sq[2], sq[0]] += 1
+        # Normalization of P_1, P_21, P_3x1
+        norms = np.sum(self._P_1)
+        self._P_1 /= norms
+        # Normalize the joint distribution of P_21        
+        norms = np.sum(self._P_21)
+        self._P_21 /= norms
+        # Normalize the joint distribution of P_3x1
+        norms = np.sum(self._P_3x1)
+        self._P_3x1 /= norms
+        # Singular Value Decomposition
+        # Keep all the positive singular values
+        (U, _, V) = np.linalg.svd(self._P_21)
+        U = U[:, 0:rank_hyperparameter]
+        V = V[0:rank_hyperparameter, :]
+        # Compute b1, binf and Bx
+        # self.factor = (P_21^{T} * U)^{+}, which is used to accelerate the computation
+        factor = np.linalg.pinv(np.dot(self._P_21.T, U))
+        self._b1 = np.dot(U.T, self._P_1)        
+        self._binf = np.dot(factor, self._P_1)
+        self._Bx = np.zeros((self._num_observ, rank_hyperparameter, rank_hyperparameter), dtype=np.float)        
+        for index in xrange(self._num_observ):
+            self._Bx[index] = np.dot(U.T, self._P_3x1[index])
+            self._Bx[index] = np.dot(self._Bx[index], factor.T)
+
+    # Overwrite the prediction algorithm using DP provided in base class
+    def predict(self, sequence):
+        '''
+        Solve the estimation problem with HMM.
+        @sequence: np.array. Observation sequence
+        @attention: Note that all the observations should be encoded as integers
+                    between [0, num_observ). This algorithm uses transformed 
+                    observable operator to compute the marginal joint probability
+        '''
+        prob = self._b1
+        for ob in sequence:
+            prob = np.dot(self._Bx[ob], prob)
+        prob = np.dot(self._binf.T, prob)
+        return prob        
