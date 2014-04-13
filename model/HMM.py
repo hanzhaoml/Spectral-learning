@@ -5,8 +5,9 @@
 # Copyright (C) Apr 12, 2014 Han Zhao <han.zhao@uwaterloo.ca>
 '''
 @purpose: Base class for Hidden Markov Model
-@author: keira
+@author: Han Zhao (Keira)
 '''
+import cPickle
 import numpy as np
 from pprint import pprint
 
@@ -106,7 +107,12 @@ class HMM(object):
         else:
             self._initial_dist = np.ones(num_hidden, dtype=np.float)
             self._initial_dist /= num_hidden
-    
+        # Build accumulative Transition matrix and Observation matrix, which will
+        # be useful when generating observation sequences
+        self._accumulative_transition_matrix, self._accumulative_observation_matrix = \
+        np.add.accumulate(self._transition_matrix, axis=0), \
+        np.add.accumulate(self._observation_matrix, axis=0)
+        
     ##############################################################################
     # Public methods
     ##############################################################################        
@@ -175,7 +181,33 @@ class HMM(object):
         @note: This method should be overwritten by different subclass. 
         '''
         pass
-    
+
+    def generate_data(self, dsize, min_seq_len=3, max_seq_len=50):
+        '''
+        Generate data based on the given HMM.
+        @dsize: np.int. Number of observation sequences to be generated
+        @min_seq_len: np.int. Minimum length of each observation sequence, inclusive
+        @max_seq_len: np.int. Maximum length of each observation sequence, exclusive
+        '''
+        data = []
+        for i in xrange(dsize):
+            # Cumulative distribution of the states
+            accdist = np.add.accumulate(self._initial_dist)
+            rlen = np.random.randint(min_seq_len, max_seq_len)
+            sq = np.zeros(rlen, dtype=np.int)
+            # Initial state chosen based on the initial distribution
+            state = np.where(accdist >= np.random.rand())[0][0]
+            for j in xrange(rlen):
+                # update the state of HMM by the Transition matrix[state]
+                state = np.where(self._accumulative_transition_matrix[:, state] 
+                                  >= np.random.rand())[0][0]
+                # randomly choose an observation by the Observation matrix[state]
+                observ = np.where(self._accumulative_observation_matrix[:, state] 
+                                  >= np.random.rand())[0][0]
+                sq[j] = observ
+            data.append(sq)        
+        return data
+     
     #########################################################################
     # Protected methods
     #########################################################################
@@ -210,7 +242,21 @@ class HMM(object):
             grids[i-1, :] = grids[i, :] * self._observation_matrix[sequence[i], :]
             grids[i-1, :] = np.dot(grids[i-1, :], self._transition_matrix)
         return grids
-
+    
+    ######################################################
+    # Static method
+    ######################################################
+    @staticmethod
+    def to_file(filename, hmm):
+        with file(filename, "wb") as fout:
+            cPickle.dump(hmm, fout)
+    
+    @staticmethod
+    def from_file(filename):
+        with file(filename, "rb") as fin:
+            model = cPickle.load(fin)
+            return model
+    
 
 class EMHMM(HMM):
     '''
