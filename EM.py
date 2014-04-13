@@ -6,6 +6,7 @@
 #
 # Distributed under terms of the Tsinghua University license.
 import numpy as np
+from pprint import pprint
 
 class BaumWelch(object):
     '''
@@ -25,7 +26,7 @@ class BaumWelch(object):
         self._transition_matrix /= norms
 #         Randomly generate the observation matrix and then again, normalize it
         self._observation_matrix = np.random.rand(self._num_observ, self._num_hidden)
-        norms = np.sum(self._observeration_matrix, axis=0)
+        norms = np.sum(self._observation_matrix, axis=0)
         self._observation_matrix /= norms
 #         Randomly generate the initial distribution pi
         self._pi = np.random.rand(self._num_hidden)
@@ -92,6 +93,7 @@ class BaumWelch(object):
         self._pi = np.random.rand(self._num_hidden)
         norms = np.sum(self._pi)
         self._pi /= norms
+        
         # Partition the sequence first to avoid numeric issues
         num_partitions = len(sequence) / seg_length
         seq_lists = [sequence[i * seg_length: (i + 1) * seg_length] for i in xrange(num_partitions)]
@@ -101,7 +103,7 @@ class BaumWelch(object):
         threshold = self._num_hidden / 500.0
         iters = 0
         # Forward-Backward Algorithm to train HMM on seq_lists
-        while True:
+        while iters < 1:
             iters += 1
             pi = np.zeros(self._num_hidden, dtype=np.float)
             transition = np.zeros((self._num_hidden, self._num_hidden), dtype=np.float)

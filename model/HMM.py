@@ -124,26 +124,55 @@ class HMM(object):
 
     def decode(self, sequence):
         '''
+        Solve the decoding problem with HMM, also called "Viterbi Algorithm"
         @sequence: np.array. Observation sequence
         @attention: Note that all the observations should be encoded as integers
                     between [0, num_observ)
+        @note: Using dynamic programming to find the most probable hidden state
+               sequence, the computational complexity for this algorithm is O(Tm^2),
+               where T is the length of the sequence and m is the number of hidden
+               states.
         '''
-        pass
+        t = len(sequence)
+        prob_grids = np.zeros((t, self._num_hidden), dtype=np.float)
+        path_grids = np.zeros((t, self._num_hidden), dtype=np.int)
+        # Boundary case
+        prob_grids[0, :] = self._initial_dist * self._observation_matrix[sequence[0], :]
+        path_grids[0, :] = -1
+        # DP procedure, prob_grids[i, j] = max{prob_grids[i-1, k] * T_{j,k} * O_{seq[i],j}}
+        # Forward-computing of DP procedure
+        for i in xrange(1, t):
+            # Using vectorized code to avoid the explicit for loop, improve the efficiency,
+            # i.e., H_k(i) = max{ H_{k-1}(j) * T_{i,j} * O_{seq[k], i}}, which can be formed
+            # as a matrix by using outer product
+            exp_prob = np.outer(self._observation_matrix[sequence[i], :], prob_grids[i-1, :])
+            exp_prob *= self._transition_matrix
+            prob_grids[i, :], path_grids[i, :] = \
+            np.max(exp_prob, axis=1), np.argmax(exp_prob, axis=1)
+        # Backward-path finding of DP procedure
+        opt_hidden_seq = np.zeros(t, dtype=np.int)
+        opt_hidden_seq[-1] = np.argmax(prob_grids[-1, :])
+        for i in xrange(t-1, 0, -1):
+            opt_hidden_seq[i-1] = path_grids[i, opt_hidden_seq[i]]
+        return opt_hidden_seq
     
     def predict(self, sequence):
         '''
+        Solve the estimation problem with HMM.
         @sequence: np.array. Observation sequence
         @attention: Note that all the observations should be encoded as integers
                     between [0, num_observ)
         '''
-        pass
-    
+        return np.sum(self._alpha_process(sequence)[-1, :])
+
     def fit(self, sequences):
         '''
+        Solve the learning problem with HMM.
         @sequences: [np.array]. List of observation sequences, each observation 
                     sequence can have different length
         @attention: Note that all the observations should be encoded as integers
                     between [0, num_observ)
+        @note: This method should be overwritten by different subclass. 
         '''
         pass
     
@@ -151,7 +180,33 @@ class HMM(object):
     # Protected methods
     #########################################################################
     def _alpha_process(self, sequence):
-        pass
+        '''
+        @sequence: np.array. Observation sequence
+        @note: Computing the forward-probability: Pr(o_1,o_2,...,o_t, h_t=i) 
+               using dynamic programming. The computational complexity is O(Tm^2),
+               where T is the length of the observation sequence and m is the 
+               number of hidden states in the HMM.
+        '''
+        t = len(sequence)
+        grids = np.zeros((t, self._num_hidden), dtype=np.float)
+        grids[0, :] = self._initial_dist * self._observation_matrix[sequence[0], :]
+        for i in xrange(1, t):
+            grids[i, :] = np.dot(self._transition_matrix, grids[i-1, :])
+            grids[i, :] *= self._observation_matrix[sequence[i], :]
+        return grids
     
     def _beta_process(self, sequence):
-        pass
+        '''
+        @sequence: np.array. Observation sequence
+        @note: Computing the backward-probability: Pr(o_t+1, ..., o_T | h_t)
+               using dynamic programming. The computational complexity is 
+               O(Tm^2) where T is the length of the observation sequence and m
+               is the number of hidden states in the HMM.
+        '''
+        t = len(sequence)
+        grids = np.zeros((t, self._num_hidden), dtype=np.float)
+        grids[t-1, :] = 1.0
+        for i in xrange(t-1, 0, -1):
+            grids[i-1, :] = grids[i, :] * self._observation_matrix[sequence[i], :]
+            grids[i-1, :] = np.dot(grids[i-1, :], self._transition_matrix)
+        return grids

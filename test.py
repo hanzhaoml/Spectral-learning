@@ -165,9 +165,9 @@ if __name__ == '__main__':
     test_filename = sys.argv[2]
     model_filename = sys.argv[3]
     log_filename = sys.argv[4]
-#     testBaumWelch(training_filename, test_filename, model_filename) 
+    testBaumWelch(training_filename, test_filename, model_filename) 
 #     main(training_filename, test_filename, model_filename)
     # statistics = EM_consistency(training_filename, test_filename, model_filename)
-    statistics = EM_consistency_same(training_filename, test_filename, model_filename)
-    np.savetxt(log_filename, statistics, delimiter=",", fmt="%e")
+#     statistics = EM_consistency_same(training_filename, test_filename, model_filename)
+#     np.savetxt(log_filename, statistics, delimiter=",", fmt="%e")
     # easy_to_distinguish(training_filename, test_filename, model_filename)
