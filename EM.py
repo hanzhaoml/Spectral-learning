@@ -6,7 +6,6 @@
 #
 # Distributed under terms of the Tsinghua University license.
 import numpy as np
-from pprint import pprint
 
 class BaumWelch(object):
     '''
