@@ -265,7 +265,7 @@ class EMHMM(HMM):
     Expectation-Maximization algorithm.
     '''
     def __init__(self, num_hidden, num_observ, 
-                 transition_matrix=None, observation_matrix=None, init_dist=None):
+                 transition_matrix=None, observation_matrix=None, initial_dist=None):
         '''
         @num_hideen: np.int, number of hidden states in HMM.
         @num_observ: np.int, number of observations in HMM.
@@ -304,11 +304,11 @@ class EMHMM(HMM):
         '''
         # Call initial method of base class directly
         super(EMHMM, self).__init__(num_hidden, num_observ, 
-                       transition_matrix, observation_matrix, init_dist)
+                       transition_matrix, observation_matrix, initial_dist)
     
     # Override the fit algorithm provided in HMM
-    def fit(self, sequences, max_iters=500, repeats=20, seq_length=100,
-            threshold=None, verbose=False):
+    def fit(self, sequences, max_iters=100, repeats=20, seq_length=100,
+            para_threshold=None, obj_threshold=None, verbose=False):
         '''
         Solve the learning problem with HMM.
         @sequences: [np.array]. List of observation sequences, each observation 
@@ -324,7 +324,8 @@ class EMHMM(HMM):
                     less than around 300. 
         '''
         # Set default threshold
-        if threshold == None: threshold = self._num_hidden / 500.0
+        if para_threshold == None: para_threshold = self._num_hidden / 500.0
+        if obj_threshold == None: obj_threshold = 1e-3
         # Partition long sequence first to avoid numeric issues
         short_sequences = filter(lambda seq: len(seq) <= seq_length, sequences)
         long_sequences = filter(lambda seq: len(seq) > seq_length, sequences)
@@ -340,9 +341,12 @@ class EMHMM(HMM):
         # Variables used to store optimal parameters found in iterations
         opt_transition_matrix = np.random.rand(self._num_hidden, self._num_hidden)
         opt_observation_matrix = np.random.rand(self._num_observ, self._num_hidden)
-        opt_init_dist = np.random.rand(self._num_hidden)
+        opt_initial_dist = np.random.rand(self._num_hidden)
         opt_log_likelihoods = -np.inf
         for i in xrange(repeats):
+            if verbose: 
+                pprint("#" * 50)
+                pprint("Repeat times: %d" % i)
             #When train is called each time, start with different random points
             self._transition_matrix = np.random.rand(self._num_hidden, self._num_hidden)
             norms = np.sum(self._transition_matrix, axis=0)
@@ -352,15 +356,16 @@ class EMHMM(HMM):
             norms = np.sum(self._observation_matrix, axis=0)
             self._observation_matrix /= norms
             
-            self._init_dist = np.random.rand(self._num_hidden)
-            norms = np.sum(self._init_dist)
-            self._init_dist /= norms
+            self._initial_dist = np.random.rand(self._num_hidden)
+            norms = np.sum(self._initial_dist)
+            self._initial_dist /= norms
                 
             iters = 0
+            last_iter_lld = -np.inf
             # Forward-Backward Algorithm to train HMM on seq_lists
             while iters < max_iters:
                 iters += 1
-                pi = np.zeros(self._num_hidden, dtype=np.float)
+                initial_dist = np.zeros(self._num_hidden, dtype=np.float)
                 transition = np.zeros((self._num_hidden, self._num_hidden), dtype=np.float)
                 observation = np.zeros((self._num_observ, self._num_hidden), dtype=np.float)
                 for seq in short_sequences:
@@ -372,9 +377,8 @@ class EMHMM(HMM):
                     sigma_matrix = self._transition_matrix * \
                     np.outer(self._observation_matrix[seq[1], :] * beta_matrix[1, :], alpha_matrix[0, :])
                     sigma_matrix /= np.sum(sigma_matrix)
-                    # Updating pi
-                    pi += np.sum(sigma_matrix, axis=0)
-                    pi /= np.sum(pi)
+                    # Updating initial_dist
+                    initial_dist += np.sum(sigma_matrix, axis=0)
                     for k in xrange(len(seq) - 1):
                         sigma_matrix = self._transition_matrix * \
                         np.outer(self._observation_matrix[seq[k + 1], :] * beta_matrix[k + 1, :], alpha_matrix[k, :])
@@ -384,23 +388,31 @@ class EMHMM(HMM):
                 # Updating transition and observation matrix
                 transition /= np.sum(transition, axis=0)[np.newaxis, :]
                 observation /= np.sum(observation, axis=0)[np.newaxis, :]
-                if np.sum(np.abs(self._transition_matrix - transition)) < threshold and \
-                    np.sum(np.abs(self._observation_matrix - observation)) < threshold:
+                initial_dist /= np.sum(initial_dist)
+                iter_lld = np.sum(np.log([self.predict(seq) for seq in short_sequences]))
+                if np.abs(iter_lld-last_iter_lld) < obj_threshold and \
+                    np.sum(np.abs(self._transition_matrix - transition)) < para_threshold and \
+                    np.sum(np.abs(self._observation_matrix - observation)) < para_threshold:
                     break
                 self._transition_matrix = transition
                 self._observation_matrix = observation
-                self._pi = pi
-            log_likelihoods = np.sum(np.log([self.predict(seq) for seq in short_sequences]))
+                self._initial_dist = initial_dist
+                last_iter_lld = iter_lld
+                if verbose: 
+                    pprint("Log-likelihood: %f" % iter_lld)
+            log_likelihoods = np.sum(np.log([self.predict(seq) for seq in short_sequences]))            
             if log_likelihoods > opt_log_likelihoods:
                 opt_log_likelihoods = log_likelihoods
                 opt_transition_matrix = self._transition_matrix
                 opt_observation_matrix = self._observation_matrix
-                opt_init_dist = self._initial_dist
+                opt_initial_dist = self._initial_dist
         # Setting parameter which gains the highest log-likelihoods
+        if verbose: 
+            pprint("Optimal log-likelihood value: %f" % opt_log_likelihoods)
         self._transition_matrix = opt_transition_matrix
         self._observation_matrix = opt_observation_matrix
-        self._initial_dist = opt_init_dist
-
+        self._initial_dist = opt_initial_dist
+        
 
 class SLHMM(HMM):
     '''
@@ -418,7 +430,7 @@ class SLHMM(HMM):
     Pr(o_1, o_2,..., o_t))
     '''
     def __init__(self, num_hidden, num_observ, 
-                 transition_matrix=None, observation_matrix=None, init_dist=None):
+                 transition_matrix=None, observation_matrix=None, initial_dist=None):
         '''
         @num_hideen: np.int, number of hidden states in HMM.
         @num_observ: np.int, number of observations in HMM.
@@ -456,7 +468,7 @@ class SLHMM(HMM):
         '''
         # Call initial method of base class directly
         super(EMHMM, self).__init__(num_hidden, num_observ, 
-                       transition_matrix, observation_matrix, init_dist)
+                       transition_matrix, observation_matrix, initial_dist)
         # First three order moments
         self._P_1 = np.zeros(self._num_observ, dtype=np.float)
         self._P_21 = np.zeros((self._num_observ, self._num_observ), dtype=np.float)
