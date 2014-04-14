@@ -85,6 +85,8 @@ class HMM(object):
             if not np.all(transition_matrix >= 0):
                 raise ValueError("Elements in transition matrix should be non-negative")
             self._transition_matrix = transition_matrix
+            norms = np.sum(transition_matrix, axis=0)
+            self._transition_matrix /= norms
         else:
             self._transition_matrix = np.eye(num_hidden, dtype=np.float)
         # Build observation matrix, default is Identity matrix
@@ -95,6 +97,8 @@ class HMM(object):
             if not np.all(observation_matrix >= 0):
                 raise ValueError("Elements in observation matrix should be non-negative")
             self._observation_matrix = observation_matrix
+            norms = np.sum(observation_matrix, axis=0)
+            self._observation_matrix /= norms
         else:
             self._observation_matrix = np.eye(num_observ, num_hidden)
         # Build initial distribution, default is uniform distribution
@@ -104,6 +108,7 @@ class HMM(object):
             if not np.all(initial_dist >= 0):
                 raise ValueError("Elements in initial_distribution should be non-negative")
             self._initial_dist = initial_dist
+            self._initial_dist /= np.sum(initial_dist)
         else:
             self._initial_dist = np.ones(num_hidden, dtype=np.float)
             self._initial_dist /= num_hidden
@@ -178,7 +183,7 @@ class HMM(object):
                     sequence can have different length
         @attention: Note that all the observations should be encoded as integers
                     between [0, num_observ)
-        @note: This method should be overwritten by different subclass. 
+        @note: This method should be overwritten by different subclasses. 
         '''
         pass
 
@@ -306,8 +311,8 @@ class EMHMM(HMM):
         super(EMHMM, self).__init__(num_hidden, num_observ, 
                        transition_matrix, observation_matrix, initial_dist)
     
-    # Override the fit algorithm provided in HMM
-    def fit(self, sequences, max_iters=100, repeats=20, seq_length=100,
+    # Override the fit algorithm provided in HMM, using EM algorithm
+    def fit(self, sequences, max_iters=100, repeats=10, seq_length=100,
             para_threshold=None, obj_threshold=None, verbose=False):
         '''
         Solve the learning problem with HMM.
@@ -399,7 +404,7 @@ class EMHMM(HMM):
                 self._initial_dist = initial_dist
                 last_iter_lld = iter_lld
                 if verbose: 
-                    pprint("Log-likelihood: %f" % iter_lld)
+                    pprint("%d iteration: %f" % (iters, iter_lld))
             log_likelihoods = np.sum(np.log([self.predict(seq) for seq in short_sequences]))            
             if log_likelihoods > opt_log_likelihoods:
                 opt_log_likelihoods = log_likelihoods
@@ -467,14 +472,15 @@ class SLHMM(HMM):
                        Note: The input array will be normalized to form a probability distribution.
         '''
         # Call initial method of base class directly
-        super(EMHMM, self).__init__(num_hidden, num_observ, 
+        super(SLHMM, self).__init__(num_hidden, num_observ, 
                        transition_matrix, observation_matrix, initial_dist)
         # First three order moments
         self._P_1 = np.zeros(self._num_observ, dtype=np.float)
         self._P_21 = np.zeros((self._num_observ, self._num_observ), dtype=np.float)
         self._P_3x1 = np.zeros((self._num_observ, self._num_observ, self._num_observ), dtype=np.float)
                 
-    # Override the fit algorithm provided in HMM
+    # Override the fit algorithm provided in HMM, using Spectral Learning 
+    # algorithm
     def fit(self, sequences, rank_hyperparameter=None, verbose=False):
         '''
         Solve the learning problem with HMM.
