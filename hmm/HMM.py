@@ -330,16 +330,16 @@ class EMHMM(HMM):
         '''
         # Set default threshold
         if para_threshold == None: para_threshold = self._num_hidden / 500.0
-        if obj_threshold == None: obj_threshold = 1e-3
+        if obj_threshold == None: obj_threshold = 1e-2
         # Partition long sequence first to avoid numeric issues
         short_sequences = filter(lambda seq: len(seq) <= seq_length, sequences)
         long_sequences = filter(lambda seq: len(seq) > seq_length, sequences)
         for each_sequence in long_sequences:
             num_partitions = len(each_sequence) / seq_length
-            seq_segments = [each_sequence[j * seq_length: (j + 1) * seq_length] 
+            seq_segments = [each_sequence[j * seq_length: (j + 1) * seq_length]
                             for j in xrange(num_partitions)]
             if len(each_sequence) > num_partitions * seq_length:
-                seq_segments.append(each_sequence[num_partitions * seq_length:])            
+                seq_segments.append(each_sequence[num_partitions * seq_length:])
             short_sequences.extend(seq_segments)
         if verbose: 
             pprint("Total number of reduced short sequences: %d" % len(short_sequences))
@@ -355,8 +355,8 @@ class EMHMM(HMM):
             #When train is called each time, start with different random points
             self._transition_matrix = np.random.rand(self._num_hidden, self._num_hidden)
             norms = np.sum(self._transition_matrix, axis=0)
-            self._transition_matrix /= norms
             
+            self._transition_matrix /= norms
             self._observation_matrix = np.random.rand(self._num_observ, self._num_hidden)
             norms = np.sum(self._observation_matrix, axis=0)
             self._observation_matrix /= norms
@@ -405,7 +405,7 @@ class EMHMM(HMM):
                 last_iter_lld = iter_lld
                 if verbose: 
                     pprint("%d iteration: %f" % (iters, iter_lld))
-            log_likelihoods = np.sum(np.log([self.predict(seq) for seq in short_sequences]))            
+            log_likelihoods = np.sum(np.log([self.predict(seq) for seq in short_sequences]))
             if log_likelihoods > opt_log_likelihoods:
                 opt_log_likelihoods = log_likelihoods
                 opt_transition_matrix = self._transition_matrix
@@ -478,7 +478,8 @@ class SLHMM(HMM):
         self._P_1 = np.zeros(self._num_observ, dtype=np.float)
         self._P_21 = np.zeros((self._num_observ, self._num_observ), dtype=np.float)
         self._P_3x1 = np.zeros((self._num_observ, self._num_observ, self._num_observ), dtype=np.float)
-                
+
+
     # Override the fit algorithm provided in HMM, using Spectral Learning 
     # algorithm
     def fit(self, sequences, rank_hyperparameter=None, verbose=False):
@@ -525,8 +526,8 @@ class SLHMM(HMM):
         self._binf = np.dot(factor, self._P_1)
         self._Bx = np.zeros((self._num_observ, rank_hyperparameter, rank_hyperparameter), dtype=np.float)        
         for index in xrange(self._num_observ):
-            self._Bx[index] = np.dot(U.T, self._P_3x1[index])
-            self._Bx[index] = np.dot(self._Bx[index], factor.T)
+            tmp = np.dot(U.T, self._P_3x1[index])
+            self._Bx[index] = np.dot(tmp, factor.T)
 
     # Overwrite the prediction algorithm using DP provided in base class
     def predict(self, sequence):

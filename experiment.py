@@ -12,17 +12,18 @@ import numpy as np
 
 from pprint import pprint
 from hmm import HMM
-from EM import BaumWelch
-from learner import SpectralLearner
+from hmm import EMHMM
+from hmm import SLHMM
+
 
 class Experimenter(object):
     '''
     This class is built to facilitate the experiments of different learning
     algorithms.
     '''
-    def __init__(self, training_filename, test_filename, model_filename, model_parameter, 
-                 num_em_restarts=20):
-        self._training_data = np.loadtxt(training_filename, dtype=np.int, delimiter=",")
+    def __init__(self, training_filename, test_filename, model_filename, num_hidden,
+                 num_observ, num_em_restarts=20):
+        self._training_data = [np.loadtxt(training_filename, dtype=np.int, delimiter=",")]
         # self._test_data = np.loadtxt(test_filename, dtype=np.int, delimiter=",")
         self._test_data = []
         with file(test_filename, "rb") as fin:
@@ -30,12 +31,13 @@ class Experimenter(object):
             for line in reader:
                 self._test_data.append(np.asarray(map(int, line)))
         self._model = HMM.from_file(model_filename)
-        self._parameter = model_parameter
+        self._num_hidden = num_hidden
+        self._num_observ = num_observ
         self._num_em_restarts = num_em_restarts
     
     @property
     def training_size(self):
-        return self._training_data.shape[0]
+        return self._training_data[0].shape[0]
     
     @property
     def test_size(self):
@@ -49,53 +51,55 @@ class Experimenter(object):
         '''
         Train a Hidden Markov Model with differnt learning algorithms
         '''
-        num_train_inst = min(num_train_inst, self._training_data.shape[0])
-        training_data = self._training_data[:num_train_inst]
+        num_train_inst = min(num_train_inst, self._training_data[0].shape[0])
+        training_data = self._training_data[0][:num_train_inst]
+        pprint("=" * 50)
+        pprint("Training set length: %d" % num_train_inst)
         # Spectral learning algorithm
         start_time = time.time()
-        self._sl_learner = SpectralLearner()
-        self._sl_learner.train(training_data, self._parameter, self._model.n)
+        self._sl_learner = SLHMM(self._num_hidden, self._num_observ)
+        self._sl_learner.fit([training_data])
         end_time = time.time()
         pprint("Time used for Spectral Learner: %f" % (end_time - start_time))
         sl_time = end_time - start_time
         # Expectation Maximization algorithm
-        self._em_learners = []
+        #self._em_learners = []
         em_times = np.zeros(self._num_em_restarts, dtype=np.float)
-        for i in xrange(self._num_em_restarts):
-            self._em_learners.append(BaumWelch(self._parameter, self._model.n))
-            start_time = time.time()
-            self._em_learners[i].train(training_data)
-            end_time = time.time()
-            pprint("Time used for Expectation Maximization: %f" % (end_time - start_time))
-            em_times[i] = end_time - start_time
+        #for i in xrange(self._num_em_restarts):
+            #self._em_learners.append(EMHMM(self._num_hidden, self._num_observ))
+            #start_time = time.time()
+            #self._em_learners[i].fit([training_data], max_iters=20, verbose=True)
+            #end_time = time.time()
+            #pprint("Time used for Expectation Maximization: %f" % (end_time - start_time))
+            #em_times[i] = end_time - start_time
         return (sl_time, np.mean(em_times))
     
     def run_experiment(self, num_train_inst):
         '''
         @log_filename:    string, filepath of the output log
         '''
-        pprint("Length of training data: %d" % self._training_data.shape[0])
         sl_time, em_time = self._train(num_train_inst)
         true_probs = np.zeros(len(self._test_data), dtype=np.float)
         sl_probs = np.zeros(len(self._test_data), dtype=np.float)
         em_probs = np.zeros((self._num_em_restarts, len(self._test_data)), dtype=np.float)
         for i, seq in enumerate(self._test_data):
-            true_probs[i] = self._model.probability(seq)
+            true_probs[i] = self._model.predict(seq)
             sl_probs[i] = self._sl_learner.predict(seq)
-            for j in xrange(self._num_em_restarts):
-                em_probs[j, i] = self._em_learners[j].predict(seq)
+            #for j in xrange(self._num_em_restarts):
+                #em_probs[j, i] = self._em_learners[j].predict(seq)
         # L1-distance between true probability and inference probability by spectral learning
         sl_variation_dist = np.abs(true_probs - sl_probs)
         # L1-distance between true probability and inference probability by expectation maximization
         em_variation_dist = np.abs(true_probs - em_probs)
-        # Percentage of negative probabilities:
+        # Sum of L1-distance
         sl_variation_measure = np.sum(sl_variation_dist)
         em_variation_measure = np.sum(em_variation_dist, axis=1)
         return (sl_time, em_time, sl_variation_measure, em_variation_measure)
     
     
-def compare_with_em(trainfile, testfile, modelpath, model_parameter, log_filename):
-    experimenter = Experimenter(trainfile, testfile, modelpath, model_parameter)
+def compare_with_em(trainfile, testfile, modelpath, num_hidden, num_observ, log_filename):
+    experimenter = Experimenter(trainfile, testfile, modelpath, 
+                                num_hidden, num_observ)
     chunk_size = 1000
     num_train_chunks = experimenter.training_size / chunk_size
     num_train_insts = chunk_size * np.arange(1, num_train_chunks+1)
@@ -152,9 +156,9 @@ def model_selection(trainfile, testfile, modelpath, log_filename):
 if __name__ == '__main__':
     usage = '''
     ./experiment.py training_filename test_filename model_filename log_filename
-    rank_hyperparameter
+    num_hidden num_observ
     '''
-    if len(sys.argv) < 5:
+    if len(sys.argv) < 7:
         print usage
         exit()
     training_filename = sys.argv[1]
@@ -162,5 +166,7 @@ if __name__ == '__main__':
     model_filename = sys.argv[3]
     log_filename = sys.argv[4]
     #model_selection(training_filename, test_filename, model_filename, log_filename)
-    rank_hyperparameter = int(sys.argv[5]) 
-    compare_with_em(training_filename, test_filename, model_filename, rank_hyperparameter, log_filename)
+    num_hidden = int(sys.argv[5])
+    num_observ = int(sys.argv[6])
+    compare_with_em(training_filename, test_filename, model_filename, 
+                    num_hidden, num_observ, log_filename)
