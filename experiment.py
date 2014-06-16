@@ -21,7 +21,7 @@ class Experimenter(object):
     algorithms.
     '''
     def __init__(self, training_filename, test_filename, model_filename, model_parameter, 
-                 num_em_restarts=20):
+                 num_em_restarts=5):
         self._training_data = np.loadtxt(training_filename, dtype=np.int, delimiter=",")
         # self._test_data = np.loadtxt(test_filename, dtype=np.int, delimiter=",")
         self._test_data = []
@@ -74,6 +74,7 @@ class Experimenter(object):
         '''
         @log_filename:    string, filepath of the output log
         '''
+        pprint("-" * 50)
         pprint("Length of training data: %d" % self._training_data.shape[0])
         sl_time, em_time = self._train(num_train_inst)
         true_probs = np.zeros(len(self._test_data), dtype=np.float)
@@ -91,12 +92,16 @@ class Experimenter(object):
         # Percentage of negative probabilities:
         sl_variation_measure = np.sum(sl_variation_dist)
         em_variation_measure = np.sum(em_variation_dist, axis=1)
+        pprint("SL L1-error")
+        pprint(sl_variation_measure)
+        pprint("EM L1-error")
+        pprint(em_variation_measure)
         return (sl_time, em_time, sl_variation_measure, em_variation_measure)
     
     
 def compare_with_em(trainfile, testfile, modelpath, model_parameter, log_filename):
     experimenter = Experimenter(trainfile, testfile, modelpath, model_parameter)
-    chunk_size = 1000
+    chunk_size = 100000
     num_train_chunks = experimenter.training_size / chunk_size
     num_train_insts = chunk_size * np.arange(1, num_train_chunks+1)
     # Number of Columns needed = num_em_restart + sl_prob + em_train_time + sl_train_time + num_training_inst
